@@ -98,12 +98,10 @@
                 }
                 catch (TaskCanceledException)
                 {
-                    _Logging.Warn(_Header + "heartbeat task canceled for worker " + GUID);
                     break;
                 }
                 catch (OperationCanceledException)
                 {
-                    _Logging.Warn(_Header + "heartbeat operation canceled for worker " + GUID);
                     break;
                 }
                 catch (Exception e)
@@ -111,6 +109,8 @@
                     _Logging.Warn(_Header + "heartbeat operation exception for work " + GUID + Environment.NewLine + e.ToString());
                 }
             }
+
+            _Logging.Info(_Header + "heartbeat operation canceled for worker " + GUID);
         }
     }
 }

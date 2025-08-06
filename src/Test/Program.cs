@@ -20,6 +20,8 @@
 
     public static class Program
     {
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
+
         private static Serializer _Serializer = new Serializer();
         private static int _TestsPassed = 0;
         private static int _TestsFailed = 0;
@@ -817,8 +819,7 @@
 
         public override async Task<WebsocketMessage> OnRequestReceived(WebsocketMessage req)
         {
-            if (req.Type.Equals(WebsocketMessageTypeEnum.Heartbeat))
-                return null;
+            if (req.Type.Equals(WebsocketMessageTypeEnum.Heartbeat)) return null;
 
             var resp = new WebsocketMessage
             {
@@ -856,5 +857,7 @@
             _NodeNumber = nodeNumber;
             _Header = $"[Worker{_NodeNumber}] ";
         }
+
+#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
     }
 }

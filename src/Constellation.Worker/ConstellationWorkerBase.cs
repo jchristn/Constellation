@@ -122,7 +122,7 @@
             if (_Disposed) throw new ObjectDisposedException(nameof(ConstellationWorkerBase));
             if (IsConnected) return;
             if (_MaintainConnection != null) return;
-            _Logging.Info(_Header + "starting maintain connection task");
+            _Logging.Debug(_Header + "starting maintain connection task");
             _MaintainConnection = Task.Run(() => MaintainConnection(), _TokenSource.Token);
         }
 
@@ -192,7 +192,7 @@
                     if (IsConnected) continue;
                     else
                     {
-                        _Logging.Warn(_Header + "worker is not connected, attempting reconnection");
+                        _Logging.Debug(_Header + "worker is not connected, attempting reconnection");
                         await _Websocket.StartAsync();
                     }
 
@@ -219,7 +219,7 @@
                 }
             }
 
-            _Logging.Info(_Header + "connection management task terminated");
+            _Logging.Debug(_Header + "connection management task terminated");
         }
 
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously

@@ -154,7 +154,7 @@
                         foreach (var resource in resourcesToRemove)
                         {
                             _ResourceToWorkerMap.Remove(resource);
-                            _Logging.Info(_Header + $"removed resource mapping for '{resource}' due to worker removal");
+                            _Logging.Debug(_Header + $"removed resource mapping for '{resource}' due to worker removal");
                         }
                     }
                 }

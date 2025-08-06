@@ -287,7 +287,7 @@
             WorkerMetadata worker = _WorkerService.GetByGuid(e.Client.Guid);
             if (worker != null)
             {
-                _Logging.Warn(_Header + "canceling operations for worker " + e.Client.Guid);
+                _Logging.Debug(_Header + "canceling operations for worker " + e.Client.Guid);
                 if (!worker.TokenSource.IsCancellationRequested) worker.TokenSource.Cancel();
                 _WorkerService.RemoveWorker(e.Client.Guid);
             }
