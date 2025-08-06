@@ -1,0 +1,19 @@
+services:
+
+  #
+  # SharpAI
+  # See https://hub.docker.com/r/jchristn/constellation
+  # and https://github.com/jchristn/constellation
+  #
+
+  sharpai:
+    container_name: 'constellation'
+    image: 'jchristn/constellation:v1.0.0'
+    network_mode: 'host'
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./sharpai.json:/app/constellation.json
+      - ./logs/:/app/logs/
+    healthcheck:
+      test: curl --fail http://localhost:8000

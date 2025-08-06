@@ -1,5 +1,6 @@
 ﻿namespace Constellation.Controller
 {
+    using SyslogLogging;
     using System;
     using WatsonWebserver.Core;
     using WatsonWebsocket;
@@ -30,9 +31,16 @@
             set => _Proxy = value ?? throw new ArgumentNullException(nameof(Proxy));
         }
 
+        public LoggingSettings Logging
+        {
+            get => _Logging;
+            set => _Logging = value ?? throw new ArgumentNullException(nameof(Logging));
+        }
+
         private WebserverSettings _Webserver = new WebserverSettings();
         private WebsocketSettings _Websocket = new WebsocketSettings();
         private HeartbeatSettings _Heartbeat = new HeartbeatSettings();
         private ProxySettings _Proxy = new ProxySettings();
+        private LoggingSettings _Logging = new LoggingSettings();
     }
 }
