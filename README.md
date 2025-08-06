@@ -1,6 +1,7 @@
 <div align="center">
   <img src="https://github.com/jchristn/constellation/blob/main/assets/logo.png" width="256" height="256">
 </div>
+
 # Constellation
 
 <p align="center">
