@@ -226,6 +226,12 @@ public class SQLiteWorker : ConstellationWorkerBase
     }
 }
 ```
+## Docker Image
+
+The official Docker image for the controller is available at: [`jchristn/constellation`](https://hub.docker.com/r/jchristn/constellation).  Refer to the `docker` directory for assets useful for running in Docker and Docker Compose.  
+
+For Windows: `run.bat v1.0.0` or `docker compose -f compose.yaml up`
+For Linux/macOS: `./run.sh v1.0.0` or `docker compose -f compose.yaml up`
 
 ## Configuration
 
