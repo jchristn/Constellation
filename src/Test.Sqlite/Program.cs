@@ -25,9 +25,11 @@
         private static int _NumWorkers = 3;
         private static LoggingModule _Logging;
         private static TestController _Controller;
-        private static List<TestWorker> _Workers;
+        private static Dictionary<int, TestWorker> _Workers;
+        private static Dictionary<int, CancellationTokenSource> _WorkerTokens;
         private static CancellationTokenSource _TokenSource;
         private static string _DatabaseDirectory = "./databases";
+        private static readonly object _WorkerLock = new object();
 
         #endregion
 
@@ -77,6 +79,10 @@
 
                 Console.WriteLine("\n=== Service Ready ===");
                 Console.WriteLine("You can now send requests to http://localhost:8000/db/{database}");
+                Console.WriteLine("\nWorker Management APIs (on same port 8000):");
+                Console.WriteLine("  GET  http://localhost:8000/workers        - List all workers");
+                Console.WriteLine("  POST http://localhost:8000/worker/start   - Start a new worker {\"number\": 5}");
+                Console.WriteLine("  POST http://localhost:8000/worker/stop    - Stop a worker {\"number\": 2}");
                 Console.WriteLine();
 
                 // Keep running until cancelled
@@ -97,6 +103,124 @@
             finally
             {
                 await Cleanup();
+            }
+        }
+
+        public static async Task<bool> StartWorker(int workerNumber)
+        {
+            lock (_WorkerLock)
+            {
+                if (_Workers.ContainsKey(workerNumber))
+                {
+                    Console.WriteLine($"Worker {workerNumber} is already running");
+                    return false;
+                }
+            }
+
+            try
+            {
+                // Create a linked token source for this worker
+                var workerToken = CancellationTokenSource.CreateLinkedTokenSource(_TokenSource.Token);
+
+                var worker = new TestWorker(
+                    _Logging,
+                    "localhost",
+                    8100,
+                    false,
+                    workerNumber,
+                    workerToken,
+                    _DatabaseDirectory
+                );
+
+                lock (_WorkerLock)
+                {
+                    _Workers[workerNumber] = worker;
+                    _WorkerTokens[workerNumber] = workerToken;
+                }
+
+                await worker.Start();
+
+                // Give worker time to connect
+                await Task.Delay(500);
+
+                Console.WriteLine($"  Worker {workerNumber} started and connected");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"  Failed to start worker {workerNumber}: {ex.Message}");
+                lock (_WorkerLock)
+                {
+                    _Workers.Remove(workerNumber);
+                    if (_WorkerTokens.ContainsKey(workerNumber))
+                    {
+                        _WorkerTokens[workerNumber]?.Dispose();
+                        _WorkerTokens.Remove(workerNumber);
+                    }
+                }
+                return false;
+            }
+        }
+
+        public static async Task<bool> StopWorker(int workerNumber)
+        {
+            TestWorker worker = null;
+            CancellationTokenSource tokenSource = null;
+
+            lock (_WorkerLock)
+            {
+                if (!_Workers.ContainsKey(workerNumber))
+                {
+                    Console.WriteLine($"Worker {workerNumber} is not running");
+                    return false;
+                }
+
+                worker = _Workers[workerNumber];
+                _Workers.Remove(workerNumber);
+
+                if (_WorkerTokens.ContainsKey(workerNumber))
+                {
+                    tokenSource = _WorkerTokens[workerNumber];
+                    _WorkerTokens.Remove(workerNumber);
+                }
+            }
+
+            try
+            {
+                Console.WriteLine($"Stopping worker {workerNumber}...");
+
+                // Cancel the worker's token
+                tokenSource?.Cancel();
+
+                // Dispose the worker
+                worker?.Dispose();
+
+                // Give time for cleanup
+                await Task.Delay(500);
+
+                // Dispose the token source
+                tokenSource?.Dispose();
+
+                Console.WriteLine($"  Worker {workerNumber} stopped successfully");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"  Error stopping worker {workerNumber}: {ex.Message}");
+                return false;
+            }
+        }
+
+        public static Dictionary<int, string> GetWorkerStatuses()
+        {
+            lock (_WorkerLock)
+            {
+                var statuses = new Dictionary<int, string>();
+                foreach (var kvp in _Workers)
+                {
+                    statuses[kvp.Key] = "Running";
+                }
+                return statuses;
             }
         }
 
@@ -134,7 +258,7 @@
             };
 
             _Controller = new TestController(settings, _Logging, _TokenSource);
-            await _Controller.Start();
+            await _Controller.StartWithManagement();
 
             Console.WriteLine("Controller started successfully");
             Console.WriteLine("  REST API: http://localhost:8000");
@@ -145,30 +269,12 @@
         {
             Console.WriteLine($"\nStarting {_NumWorkers} workers...");
 
-            _Workers = new List<TestWorker>();
+            _Workers = new Dictionary<int, TestWorker>();
+            _WorkerTokens = new Dictionary<int, CancellationTokenSource>();
 
             for (int i = 1; i <= _NumWorkers; i++)
             {
-                // Create a linked token source for each worker
-                var workerToken = CancellationTokenSource.CreateLinkedTokenSource(_TokenSource.Token);
-
-                var worker = new TestWorker(
-                    _Logging,
-                    "localhost",
-                    8100,
-                    false,
-                    i,
-                    workerToken,
-                    _DatabaseDirectory
-                );
-
-                _Workers.Add(worker);
-                await worker.Start();
-
-                // Give each worker time to connect
-                await Task.Delay(500);
-
-                Console.WriteLine($"  Worker {i} started and connected");
+                await StartWorker(i);
             }
 
             Console.WriteLine($"All {_NumWorkers} workers started successfully");
@@ -181,17 +287,10 @@
             // Stop and dispose workers first
             if (_Workers != null)
             {
-                foreach (var worker in _Workers)
+                var workerNumbers = _Workers.Keys.ToList();
+                foreach (var workerNumber in workerNumbers)
                 {
-                    try
-                    {
-                        worker?.Dispose();
-                        Console.WriteLine($"  Worker {worker.NodeNumber} disposed");
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"  Error disposing worker: {ex.Message}");
-                    }
+                    await StopWorker(workerNumber);
                 }
             }
 
@@ -248,14 +347,26 @@
             Console.WriteLine("     -d '{\"query\":\"SELECT 1+1 as result\"}'");
             Console.WriteLine();
 
-            Console.WriteLine("PowerShell Examples:");
+            Console.WriteLine("Worker Management Examples:");
             Console.WriteLine("-".PadRight(50, '-'));
-            Console.WriteLine("Invoke-RestMethod -Uri 'http://localhost:8000/db/test' -Method POST `");
-            Console.WriteLine("  -ContentType 'application/json' `");
-            Console.WriteLine("  -Body '{\"query\":\"SELECT * FROM customers LIMIT 5\"}'");
+
+            Console.WriteLine("1. List all workers:");
+            Console.WriteLine("   curl http://localhost:8000/workers");
             Console.WriteLine();
 
-            Console.WriteLine("Note: Database files are created in ./databases/worker{N}/ directories");
+            Console.WriteLine("2. Start a new worker (e.g., worker 5):");
+            Console.WriteLine("   curl -X POST http://localhost:8000/worker/start \\");
+            Console.WriteLine("     -H 'Content-Type: application/json' \\");
+            Console.WriteLine("     -d '{\"number\":5}'");
+            Console.WriteLine();
+
+            Console.WriteLine("3. Stop a running worker (e.g., worker 2):");
+            Console.WriteLine("   curl -X POST http://localhost:8000/worker/stop \\");
+            Console.WriteLine("     -H 'Content-Type: application/json' \\");
+            Console.WriteLine("     -d '{\"number\":2}'");
+            Console.WriteLine();
+
+            Console.WriteLine("Note: Database files are created in ./databases/ directory");
             Console.WriteLine("Each database URL is pinned to a specific worker for exclusive access");
             Console.WriteLine("-".PadRight(50, '-'));
         }
@@ -275,6 +386,148 @@
         {
         }
 
+        public async Task StartWithManagement()
+        {
+            // Start the base controller
+            await base.Start();
+
+            // Add management routes to the controller's webserver
+            if (this.Webserver != null)
+            {
+                // GET /workers - List all workers
+                this.Webserver.Routes.PreAuthentication.Static.Add(HttpMethod.GET, "/workers", async (ctx) =>
+                {
+                    var configuredWorkers = Program.GetWorkerStatuses();
+                    var connectedWorkers = this.Workers;
+
+                    var response = new
+                    {
+                        configured = configuredWorkers.Select(kvp => new
+                        {
+                            number = kvp.Key,
+                            status = kvp.Value
+                        }),
+                        connected = connectedWorkers.Select(w => new
+                        {
+                            guid = w.GUID,
+                            healthy = w.Healthy,
+                            ip = w.Ip,
+                            port = w.Port,
+                            addedUtc = w.AddedUtc,
+                            lastMessageUtc = w.LastMessageUtc
+                        }),
+                        summary = new
+                        {
+                            totalConfigured = configuredWorkers.Count,
+                            totalConnected = connectedWorkers.Count,
+                            totalHealthy = connectedWorkers.Count(w => w.Healthy)
+                        }
+                    };
+
+                    ctx.Response.StatusCode = 200;
+                    ctx.Response.ContentType = "application/json";
+                    await ctx.Response.Send(JsonSerializer.Serialize(response, new JsonSerializerOptions { WriteIndented = true }));
+                });
+
+                // POST /worker/start - Start a worker
+                this.Webserver.Routes.PreAuthentication.Static.Add(HttpMethod.POST, "/worker/start", async (ctx) =>
+                {
+                    try
+                    {
+                        var requestBody = ctx.Request.DataAsString;
+                        WorkerControlRequest request = null;
+
+                        if (!string.IsNullOrEmpty(requestBody))
+                        {
+                            request = JsonSerializer.Deserialize<WorkerControlRequest>(requestBody, new JsonSerializerOptions
+                            {
+                                PropertyNameCaseInsensitive = true
+                            });
+                        }
+
+                        if (request?.Number == null)
+                        {
+                            ctx.Response.StatusCode = 400;
+                            ctx.Response.ContentType = "application/json";
+                            await ctx.Response.Send(JsonSerializer.Serialize(new { error = "Worker number required in JSON body: {\"number\": 5}" }));
+                            return;
+                        }
+
+                        bool success = await Program.StartWorker(request.Number.Value);
+
+                        ctx.Response.StatusCode = success ? 200 : 409;
+                        ctx.Response.ContentType = "application/json";
+                        await ctx.Response.Send(JsonSerializer.Serialize(new
+                        {
+                            success = success,
+                            workerNumber = request.Number,
+                            message = success ? $"Worker {request.Number} started successfully" : $"Worker {request.Number} already running or failed to start"
+                        }));
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"{_Header}Error starting worker: {ex.Message}");
+                        ctx.Response.StatusCode = 500;
+                        ctx.Response.ContentType = "application/json";
+                        await ctx.Response.Send(JsonSerializer.Serialize(new { error = ex.Message }));
+                    }
+                });
+
+                // POST /worker/stop - Stop a worker
+                this.Webserver.Routes.PreAuthentication.Static.Add(HttpMethod.POST, "/worker/stop", async (ctx) =>
+                {
+                    try
+                    {
+                        var requestBody = ctx.Request.DataAsString;
+                        WorkerControlRequest request = null;
+
+                        if (!string.IsNullOrEmpty(requestBody))
+                        {
+                            request = JsonSerializer.Deserialize<WorkerControlRequest>(requestBody, new JsonSerializerOptions
+                            {
+                                PropertyNameCaseInsensitive = true
+                            });
+                        }
+
+                        if (request?.Number == null)
+                        {
+                            ctx.Response.StatusCode = 400;
+                            ctx.Response.ContentType = "application/json";
+                            await ctx.Response.Send(JsonSerializer.Serialize(new { error = "Worker number required in JSON body: {\"number\": 2}" }));
+                            return;
+                        }
+
+                        bool success = await Program.StopWorker(request.Number.Value);
+
+                        ctx.Response.StatusCode = success ? 200 : 404;
+                        ctx.Response.ContentType = "application/json";
+                        await ctx.Response.Send(JsonSerializer.Serialize(new
+                        {
+                            success = success,
+                            workerNumber = request.Number,
+                            message = success ? $"Worker {request.Number} stopped successfully" : $"Worker {request.Number} not found or already stopped"
+                        }));
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"{_Header}Error stopping worker: {ex.Message}");
+                        ctx.Response.StatusCode = 500;
+                        ctx.Response.ContentType = "application/json";
+                        await ctx.Response.Send(JsonSerializer.Serialize(new { error = ex.Message }));
+                    }
+                });
+
+                Console.WriteLine($"{_Header}Management APIs added to controller:");
+                Console.WriteLine($"  GET  http://localhost:8000/workers");
+                Console.WriteLine($"  POST http://localhost:8000/worker/start");
+                Console.WriteLine($"  POST http://localhost:8000/worker/stop");
+            }
+            else
+            {
+                Console.WriteLine($"{_Header}Warning: Could not add management routes (webserver not accessible)");
+            }
+        }
+
         public override async Task OnConnection(Guid guid, string ipAddress, int port)
         {
             _connectionCount++;
@@ -288,6 +541,11 @@
             Console.WriteLine($"{_Header}Worker disconnected: {guid} from {ipAddress}:{port} (Remaining: {_connectionCount})");
             await Task.CompletedTask;
         }
+    }
+
+    public class WorkerControlRequest
+    {
+        public int? Number { get; set; }
     }
 
     #endregion
@@ -320,10 +578,10 @@
         {
             NodeNumber = nodeNumber;
             _Header = $"[Worker{NodeNumber}] ";
-            _DatabaseDirectory = Path.Combine(databaseDirectory, $"worker{nodeNumber}");
+            _DatabaseDirectory = databaseDirectory;  // Use the shared directory
             _DatabaseConnections = new ConcurrentDictionary<string, SqliteConnection>();
 
-            // Ensure worker-specific directory exists
+            // Ensure database directory exists
             if (!Directory.Exists(_DatabaseDirectory))
             {
                 Directory.CreateDirectory(_DatabaseDirectory);

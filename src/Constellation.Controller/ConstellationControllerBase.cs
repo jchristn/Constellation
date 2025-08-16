@@ -38,12 +38,13 @@
             }
         }
 
+        public Webserver Webserver { get; private set; } = null;
+        public WatsonWsServer Websocket { get; private set; } = null;
+
         private string _Header = "[ConstellationController] ";
         private Settings _Settings = null;
         private LoggingModule _Logging = null;
         private Guid _GUID = Guid.NewGuid();
-        private Webserver _Webserver = null;
-        private WatsonWsServer _Websocket = null;
         private Serializer _Serializer = new Serializer();
 
         private CancellationTokenSource _TokenSource = new CancellationTokenSource();
@@ -65,13 +66,13 @@
             _WorkerService = new WorkerService(_Settings, _Logging);
             _ResponseService = new ResponseService(_Settings, _Logging);
 
-            _Webserver = new Webserver(_Settings.Webserver, DefaultRoute);
-            _Webserver.Routes.PreRouting = PreRoutingRoute;
+            Webserver = new Webserver(_Settings.Webserver, DefaultRoute);
+            Webserver.Routes.PreRouting = PreRoutingRoute;
 
-            _Websocket = new WatsonWsServer(_Settings.Websocket.Hostnames, _Settings.Websocket.Port, _Settings.Websocket.Ssl);
-            _Websocket.ClientConnected += WebsocketClientConnected;
-            _Websocket.ClientDisconnected += WebsocketClientDisconnected;
-            _Websocket.MessageReceived += WebsocketMessageReceived;
+            Websocket = new WatsonWsServer(_Settings.Websocket.Hostnames, _Settings.Websocket.Port, _Settings.Websocket.Ssl);
+            Websocket.ClientConnected += WebsocketClientConnected;
+            Websocket.ClientDisconnected += WebsocketClientDisconnected;
+            Websocket.MessageReceived += WebsocketMessageReceived;
         }
 
         protected virtual void Dispose(bool disposing)
@@ -82,12 +83,12 @@
                 {
                     if (!_TokenSource.Token.IsCancellationRequested) _TokenSource.Cancel();
 
-                    _Webserver?.Dispose();
-                    _Websocket?.Dispose();
+                    Webserver?.Dispose();
+                    Websocket?.Dispose();
                 }
 
-                _Webserver = null;
-                _Websocket = null;
+                Webserver = null;
+                Websocket = null;
                 _WorkerService = null;
                 _ResponseService = null;
                 _Disposed = true;
@@ -182,7 +183,7 @@
                 msg.Headers.Add(Constants.ForwardedForHeader, ctx.Request.Source.IpAddress);
 
                 string msgJson = _Serializer.SerializeJson(msg, false);
-                bool success = await _Websocket.SendAsync(worker.GUID, Encoding.UTF8.GetBytes(msgJson), WebSocketMessageType.Binary, _TokenSource.Token).ConfigureAwait(false);
+                bool success = await Websocket.SendAsync(worker.GUID, Encoding.UTF8.GetBytes(msgJson), WebSocketMessageType.Binary, _TokenSource.Token).ConfigureAwait(false);
                 if (!success)
                 {
                     _Logging.Warn(_Header + "unable to proxy request " + ctx.Request.Method.ToString() + " " + resource + " to worker " + worker.GUID);
@@ -256,23 +257,23 @@
 
         public async Task Start()
         {
-            if (_Webserver != null && !_Webserver.IsListening)
+            if (Webserver != null && !Webserver.IsListening)
             {
-                _WebserverTask = Task.Run(() => _Webserver.StartAsync(_TokenSource.Token), _TokenSource.Token);
+                _WebserverTask = Task.Run(() => Webserver.StartAsync(_TokenSource.Token), _TokenSource.Token);
                 _Logging.Debug(_Header + "started webserver");
             }
 
-            if (_Websocket != null && !_Websocket.IsListening)
+            if (Websocket != null && !Websocket.IsListening)
             {
-                _WebsocketTask = Task.Run(() => _Websocket.StartAsync(_TokenSource.Token), _TokenSource.Token);
+                _WebsocketTask = Task.Run(() => Websocket.StartAsync(_TokenSource.Token), _TokenSource.Token);
                 _Logging.Debug(_Header + "started websocket server");
             }
         }
 
         public async Task Stop()
         {
-            if (_Webserver != null && _Webserver.IsListening) _Webserver.Stop();
-            if (_Websocket != null && _Websocket.IsListening) _Websocket.Stop();
+            if (Webserver != null && Webserver.IsListening) Webserver.Stop();
+            if (Websocket != null && Websocket.IsListening) Websocket.Stop();
         }
 
         public abstract Task OnConnection(Guid guid, string ipAddress, int port);
@@ -303,7 +304,7 @@
                 _TokenSource.Token,
                 newTokenSource.Token);
 
-            WorkerMetadata worker = new WorkerMetadata(_Settings, _Websocket, _Logging, e.Client.Guid, e.Client.Ip, e.Client.Port, workerTokenSource);
+            WorkerMetadata worker = new WorkerMetadata(_Settings, Websocket, _Logging, e.Client.Guid, e.Client.Ip, e.Client.Port, workerTokenSource);
             _WorkerService.AddWorker(worker);
 
             _Logging.Debug(_Header + "registered client " + e.Client.Guid + " " + e.Client.Ip + ":" + e.Client.Port);
