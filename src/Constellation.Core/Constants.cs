@@ -74,11 +74,6 @@
         public static string RequestGuidHeader = "x-request";
 
         /// <summary>
-        /// Runtime header.
-        /// </summary>
-        public static string RuntimeHeader = "x-total-runtime";
-
-        /// <summary>
         /// Forwarded for header, generally x-forwarded-for.
         /// </summary>
         public static string ForwardedForHeader = "x-forwarded-for";

@@ -109,6 +109,10 @@
 
         private async Task DefaultRoute(HttpContextBase ctx)
         {
+            Guid requestGuid = Guid.NewGuid();
+
+            ctx.Response.Headers.Add(Constants.RequestGuidHeader, requestGuid.ToString());
+
             try
             {
                 #region Healthcheck-and-Favicon
@@ -164,9 +168,13 @@
 
                 _Logging.Debug(_Header + $"routing request for {resource} to worker {worker.GUID}");
 
+                ctx.Response.Headers.Add(Constants.WorkerNameHeader, worker.GUID.ToString());
+
                 #endregion
 
                 #region Proxy-Request
+
+                ctx.Request.Headers.Add(Constants.ForwardedForHeader, (ctx.Request.Source.IpAddress + ":" + ctx.Request.Source.Port));
 
                 WebsocketMessage msg = new WebsocketMessage
                 {
