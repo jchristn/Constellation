@@ -156,14 +156,84 @@ curl http://localhost:8000/databases/users.db  # Same worker
 curl http://localhost:8000/databases/orders.db  # Possibly different worker
 ```
 
-## Real-World Example: SQLite-as-a-Service
+## Complete Example: SQLite Service
 
-Here's a more complete example showing how to build a SQLite service:
+Here's a simple but complete SQLite service that automatically creates databases on first access:
 
 ```csharp
+using System;
+using System.Collections.Generic;
+using System.Data.SQLite;
+using System.Text;
+using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
+using Constellation.Controller;
+using Constellation.Core;
+using Constellation.Worker;
+using SyslogLogging;
+
+// Program.cs - Run this complete example
+class Program
+{
+    static async Task Main(string[] args)
+    {
+        var logging = new LoggingModule();
+        var cts = new CancellationTokenSource();
+
+        // Start controller
+        var controller = new SQLiteController(
+            new Settings
+            {
+                Webserver = new WebserverSettings { Hostname = "localhost", Port = 8000 },
+                Websocket = new WebsocketSettings { 
+                    Hostnames = new List<string> { "localhost" }, 
+                    Port = 8001 
+                }
+            },
+            logging,
+            cts
+        );
+        await controller.Start();
+
+        // Start 3 workers
+        for (int i = 1; i <= 3; i++)
+        {
+            var worker = new SQLiteWorker(logging, "localhost", 8001, false, i, cts);
+            await worker.Start();
+        }
+
+        Console.WriteLine("SQLite Service running on http://localhost:8000");
+        Console.WriteLine("Try: curl -X POST http://localhost:8000/db/customers -d '{\"query\":\"SELECT * FROM customers\"}'");
+        Console.ReadLine();
+    }
+}
+
+// Controller - just routes requests
+public class SQLiteController : ConstellationControllerBase
+{
+    public SQLiteController(Settings settings, LoggingModule logging, CancellationTokenSource tokenSource)
+        : base(settings, logging, tokenSource) { }
+
+    public override async Task OnConnection(Guid guid, string ip, int port)
+        => Console.WriteLine($"Worker {guid} connected");
+
+    public override async Task OnDisconnection(Guid guid, string ip, int port)
+        => Console.WriteLine($"Worker {guid} disconnected");
+}
+
+// Worker - handles SQLite operations
 public class SQLiteWorker : ConstellationWorkerBase
 {
     private readonly Dictionary<string, SQLiteConnection> _databases = new();
+    private readonly int _workerId;
+
+    public SQLiteWorker(LoggingModule logging, string hostname, int port, bool ssl, 
+                       int workerId, CancellationTokenSource tokenSource)
+        : base(logging, hostname, port, ssl, tokenSource)
+    {
+        _workerId = workerId;
+    }
 
     public override async Task<WebsocketMessage> OnRequestReceived(WebsocketMessage req)
     {
@@ -172,26 +242,65 @@ public class SQLiteWorker : ConstellationWorkerBase
 
         try
         {
-            // Extract database name from URL
-            var dbName = ExtractDatabaseName(req.Url.Path);
+            // Extract database name from URL: /db/customers -> customers
+            var dbName = req.Url.Path.Split('/')[2];
             
-            // Get or create exclusive connection
+            // Get or create database connection
             if (!_databases.ContainsKey(dbName))
             {
-                _databases[dbName] = new SQLiteConnection($"Data Source={dbName}.db");
-                _databases[dbName].Open();
+                var conn = new SQLiteConnection($"Data Source={dbName}.db");
+                conn.Open();
+                
+                // Create table if it doesn't exist
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"
+                        CREATE TABLE IF NOT EXISTS customers (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            name TEXT NOT NULL,
+                            email TEXT,
+                            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                        )";
+                    cmd.ExecuteNonQuery();
+                }
+                
+                _databases[dbName] = conn;
+                Console.WriteLine($"Worker {_workerId}: Created database '{dbName}.db'");
             }
 
-            // YOUR DATABASE LOGIC GOES HERE
-            // Example: Parse SQL from request body and execute
+            // Parse query from request body
+            var request = JsonSerializer.Deserialize<QueryRequest>(
+                Encoding.UTF8.GetString(req.Data ?? new byte[0])
+            );
             
+            // Execute query
+            var results = new List<Dictionary<string, object>>();
+            using (var cmd = _databases[dbName].CreateCommand())
+            {
+                cmd.CommandText = request?.Query ?? "SELECT datetime('now')";
+                using (var reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        var row = new Dictionary<string, object>();
+                        for (int i = 0; i < reader.FieldCount; i++)
+                        {
+                            row[reader.GetName(i)] = reader.GetValue(i);
+                        }
+                        results.Add(row);
+                    }
+                }
+            }
+
+            // Return response
+            var response = new { worker = _workerId, database = dbName, results };
             return new WebsocketMessage
             {
                 GUID = req.GUID,
                 Type = WebsocketMessageTypeEnum.Response,
                 StatusCode = 200,
                 ContentType = "application/json",
-                Data = Encoding.UTF8.GetBytes(jsonResult)
+                Data = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(response))
             };
         }
         catch (Exception ex)
@@ -202,30 +311,46 @@ public class SQLiteWorker : ConstellationWorkerBase
                 Type = WebsocketMessageTypeEnum.Response,
                 StatusCode = 500,
                 ContentType = "application/json",
-                Data = Encoding.UTF8.GetBytes($"{{\"error\":\"{ex.Message}\"}}")
+                Data = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new { error = ex.Message }))
             };
         }
     }
-    
-    private string ExtractDatabaseName(string path)
-    {
-        // YOUR PARSING LOGIC GOES HERE
-        // Example: /api/db/users.db -> users
-        var segments = path.Split('/');
-        return segments[3].Replace(".db", "");
-    }
+
+    public override async Task OnConnection(Guid guid)
+        => Console.WriteLine($"Worker {_workerId} connected");
 
     public override async Task OnDisconnection(Guid guid)
     {
-        // Clean up database connections
         foreach (var db in _databases.Values)
-        {
-            db.Close();
             db.Dispose();
-        }
+    }
+
+    public class QueryRequest
+    {
+        public string Query { get; set; }
     }
 }
 ```
+
+### Testing the SQLite Service
+
+```bash
+# Create and query the customers database (auto-creates table on first access)
+curl -X POST http://localhost:8000/db/customers \
+  -H "Content-Type: application/json" \
+  -d '{"query":"INSERT INTO customers (name, email) VALUES (\"Alice\", \"alice@example.com\")"}'
+
+# Query the data (will always go to the same worker)
+curl -X POST http://localhost:8000/db/customers \
+  -H "Content-Type: application/json" \
+  -d '{"query":"SELECT * FROM customers"}'
+
+# Different database may go to different worker
+curl -X POST http://localhost:8000/db/orders \
+  -H "Content-Type: application/json" \
+  -d '{"query":"SELECT datetime(\"now\")"}'
+```
+
 ## Docker Image
 
 The official Docker image for the controller is available at: [`jchristn/constellation`](https://hub.docker.com/r/jchristn/constellation).  Refer to the `docker` directory for assets useful for running in Docker and Docker Compose.  
@@ -279,9 +404,9 @@ Remember that the raw URL becomes the resource key. Design your URLs carefully:
 
 ```
 Good patterns for databases:
-/db/customers.db         -> All customer DB operations on same worker
-/db/orders.db           -> May be on different worker
-/db/inventory.db        -> May be on different worker
+/db/customers         -> All customer DB operations on same worker
+/db/orders           -> May be on different worker
+/db/inventory        -> May be on different worker
 
 Good patterns for game servers:
 /games/world-123        -> All operations for world-123 on same worker

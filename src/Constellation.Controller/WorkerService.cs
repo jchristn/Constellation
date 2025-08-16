@@ -8,7 +8,10 @@
     using System.Text;
     using System.Threading.Tasks;
 
-    internal class WorkerService
+    /// <summary>
+    /// Worker service.
+    /// </summary>
+    public class WorkerService
     {
         public List<WorkerMetadata> Workers
         {
@@ -32,13 +35,24 @@
         private Dictionary<string, Guid> _ResourceToWorkerMap = new Dictionary<string, Guid>();
         private readonly object _ResourceMapLock = new object();
 
-        internal WorkerService(Settings settings, LoggingModule logging)
+        /// <summary>
+        /// Worker service.
+        /// </summary>
+        /// <param name="settings"></param>
+        /// <param name="logging"></param>
+        /// <exception cref="ArgumentNullException"></exception>
+        public WorkerService(Settings settings, LoggingModule logging)
         {
             _Settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _Logging = logging ?? throw new ArgumentNullException(nameof(logging));
         }
 
-        internal WorkerMetadata GetByResource(string resource)
+        /// <summary>
+        /// Retrieve worker by resource.
+        /// </summary>
+        /// <param name="resource">Resource.</param>
+        /// <returns>WorkerMetadata.</returns>
+        public WorkerMetadata GetByResource(string resource)
         {
             if (String.IsNullOrEmpty(resource)) throw new ArgumentNullException(nameof(resource));
 
@@ -112,7 +126,12 @@
             }
         }
 
-        internal WorkerMetadata GetByGuid(Guid guid)
+        /// <summary>
+        /// Retrieve worker by GUID.
+        /// </summary>
+        /// <param name="guid">GUID.</param>
+        /// <returns>Worker metadata.</returns>
+        public WorkerMetadata GetByGuid(Guid guid)
         {
             lock (_WorkersLock)
             {
@@ -122,7 +141,11 @@
             return null;
         }
 
-        internal void AddWorker(WorkerMetadata worker)
+        /// <summary>
+        /// Add a worker.
+        /// </summary>
+        /// <param name="worker">Worker metadata.</param>
+        public void AddWorker(WorkerMetadata worker)
         {
             if (worker == null) throw new ArgumentNullException(nameof(worker));
 
@@ -133,7 +156,12 @@
             }
         }
 
-        internal bool RemoveWorker(Guid guid)
+        /// <summary>
+        /// Remove a worker by GUID.
+        /// </summary>
+        /// <param name="guid">GUID.</param>
+        /// <returns>True if removed.</returns>
+        public bool RemoveWorker(Guid guid)
         {
             lock (_WorkersLock)
             {
@@ -163,7 +191,11 @@
             }
         }
 
-        internal Dictionary<string, Guid> GetResourceMappings()
+        /// <summary>
+        /// Retrieve resource mappings.
+        /// </summary>
+        /// <returns>Dictionary where the key is the resource and the value is the GUID of the worker.</returns>
+        public Dictionary<string, Guid> GetResourceMappings()
         {
             lock (_ResourceMapLock)
             {
@@ -171,7 +203,11 @@
             }
         }
 
-        internal void ClearResourceMapping(string resource)
+        /// <summary>
+        /// Remove resource mappings for a given resource.
+        /// </summary>
+        /// <param name="resource">Resource.</param>
+        public void ClearResourceMapping(string resource)
         {
             if (String.IsNullOrEmpty(resource)) return;
 
