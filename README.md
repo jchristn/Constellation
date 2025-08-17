@@ -4,6 +4,8 @@
 
 # Constellation
 
+**RESTful workload placement and virtualization for exactly-one resource ownership patterns**
+
 <p align="center"><div style="display: flex; justify-content: center;">
 <div>
   <table>
@@ -56,8 +58,6 @@
   </table>
 </div>
 </p>
-
-**RESTful workload placement and virtualization for exactly-one resource ownership patterns**
 
 ## Why Constellation?
 
