@@ -3,8 +3,6 @@
 	<PropertyGroup>
 		<OutputType>Exe</OutputType>
 		<TargetFramework>net8.0</TargetFramework>
-		<GenerateDocumentationFile>True</GenerateDocumentationFile>
-		<DocumentationFile>Constellation.ControllerServer.xml</DocumentationFile>
 	</PropertyGroup>
 
 	<ItemGroup>

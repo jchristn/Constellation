@@ -10,6 +10,9 @@
     /// </summary>
     public class ControllerNode
     {
+        /// <summary>
+        /// GUID.
+        /// </summary>
         public Guid GUID { get; set; } = Guid.Empty;
     }
 }

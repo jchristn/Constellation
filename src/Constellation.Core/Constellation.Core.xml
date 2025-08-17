@@ -248,6 +248,11 @@
             Controller node.
             </summary>
         </member>
+        <member name="P:Constellation.Core.ControllerNode.GUID">
+            <summary>
+            GUID.
+            </summary>
+        </member>
         <member name="T:Constellation.Core.HttpResponseDetails">
             <summary>
             HTTP response details.

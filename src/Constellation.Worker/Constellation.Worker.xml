@@ -4,5 +4,99 @@
         <name>Constellation.Worker</name>
     </assembly>
     <members>
+        <member name="T:Constellation.Worker.ConstellationWorkerBase">
+            <summary>
+            Constellation worker base class.
+            </summary>
+        </member>
+        <member name="P:Constellation.Worker.ConstellationWorkerBase.ServerHostname">
+            <summary>
+            Server hostname.
+            </summary>
+        </member>
+        <member name="P:Constellation.Worker.ConstellationWorkerBase.ServerPort">
+            <summary>
+            Server port.
+            </summary>
+        </member>
+        <member name="P:Constellation.Worker.ConstellationWorkerBase.ServerSsl">
+            <summary>
+            Enable or disable SSL when connecting to the server.
+            </summary>
+        </member>
+        <member name="P:Constellation.Worker.ConstellationWorkerBase.ControllerUrl">
+            <summary>
+            Controller URL.
+            </summary>
+        </member>
+        <member name="P:Constellation.Worker.ConstellationWorkerBase.GUID">
+            <summary>
+            GUID of the worker.
+            </summary>
+        </member>
+        <member name="P:Constellation.Worker.ConstellationWorkerBase.IsConnected">
+            <summary>
+            Boolean indicating if the worker is connected.
+            </summary>
+        </member>
+        <member name="P:Constellation.Worker.ConstellationWorkerBase.ConnectionCheckIntervalMs">
+            <summary>
+            Frequency with which the connection is checked, in milliseconds.  Minimum is 1000.  Default is 5000.
+            </summary>
+        </member>
+        <member name="M:Constellation.Worker.ConstellationWorkerBase.#ctor(SyslogLogging.LoggingModule,System.String,System.Int32,System.Boolean,System.Threading.CancellationTokenSource)">
+            <summary>
+            Constellation worker base class.
+            </summary>
+            <param name="logging">Logging module.</param>
+            <param name="serverHostname">Server hostname.</param>
+            <param name="serverPort">Server port.</param>
+            <param name="serverSsl">Enable or disable SSL when connecting to the server.</param>
+            <param name="tokenSource">Cancellation token source.</param>
+        </member>
+        <member name="M:Constellation.Worker.ConstellationWorkerBase.Dispose(System.Boolean)">
+            <summary>
+            Dispose.
+            </summary>
+            <param name="disposing">Disposing.</param>
+        </member>
+        <member name="M:Constellation.Worker.ConstellationWorkerBase.Dispose">
+            <summary>
+            Dispose.
+            </summary>
+        </member>
+        <member name="M:Constellation.Worker.ConstellationWorkerBase.Start">
+            <summary>
+            Start the worker.
+            </summary>
+            <returns>Task.</returns>
+        </member>
+        <member name="M:Constellation.Worker.ConstellationWorkerBase.Stop">
+            <summary>
+            Stop the worker.
+            </summary>
+            <returns>Task.</returns>
+        </member>
+        <member name="M:Constellation.Worker.ConstellationWorkerBase.OnRequestReceived(Constellation.Core.WebsocketMessage)">
+            <summary>
+            Method to invoke when a request is received.
+            </summary>
+            <param name="req">Websocket message.</param>
+            <returns>Websocket message.</returns>
+        </member>
+        <member name="M:Constellation.Worker.ConstellationWorkerBase.OnConnection(System.Guid)">
+            <summary>
+            Method to invoke when connected to the server.
+            </summary>
+            <param name="guid">GUID.</param>
+            <returns>Task.</returns>
+        </member>
+        <member name="M:Constellation.Worker.ConstellationWorkerBase.OnDisconnection(System.Guid)">
+            <summary>
+            Method to invoke when disconnected from the server.
+            </summary>
+            <param name="guid">GUID.</param>
+            <returns>Task.</returns>
+        </member>
     </members>
 </doc>

@@ -11,38 +11,59 @@
     using SyslogLogging;
     using WatsonWebsocket;
 
+    /// <summary>
+    /// Constellation worker base class.
+    /// </summary>
     public abstract class ConstellationWorkerBase : IDisposable
     {
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
 
+        /// <summary>
+        /// Server hostname.
+        /// </summary>
         public string ServerHostname
         {
             get => _ServerHostname;
             private set => _ServerHostname = (!String.IsNullOrEmpty(value) ? value : throw new ArgumentNullException(nameof(ServerHostname)));
         }
 
+        /// <summary>
+        /// Server port.
+        /// </summary>
         public int ServerPort
         {
             get => _ServerPort;
             private set => _ServerPort = (value >= 0 && value < 65536 ? value : throw new ArgumentOutOfRangeException(nameof(ServerPort)));
         }
 
+        /// <summary>
+        /// Enable or disable SSL when connecting to the server.
+        /// </summary>
         public bool ServerSsl
         {
             get => _ServerSsl;
             private set => _ServerSsl = value;
         }
 
+        /// <summary>
+        /// Controller URL.
+        /// </summary>
         public string ControllerUrl
         {
             get => (_ServerSsl ? "https://" : "http://") + _ServerHostname + ":" + _ServerPort;
         }
 
+        /// <summary>
+        /// GUID of the worker.
+        /// </summary>
         public Guid GUID
         {
             get => _GUID;
         }
 
+        /// <summary>
+        /// Boolean indicating if the worker is connected.
+        /// </summary>
         public bool IsConnected
         {
             get
@@ -51,6 +72,9 @@
             }
         }
 
+        /// <summary>
+        /// Frequency with which the connection is checked, in milliseconds.  Minimum is 1000.  Default is 5000.
+        /// </summary>
         public int ConnectionCheckIntervalMs
         {
             get => _ConnectionCheckIntervalMs;
@@ -71,6 +95,14 @@
         private CancellationTokenSource _TokenSource = new CancellationTokenSource();
         private bool _Disposed = false;
 
+        /// <summary>
+        /// Constellation worker base class.
+        /// </summary>
+        /// <param name="logging">Logging module.</param>
+        /// <param name="serverHostname">Server hostname.</param>
+        /// <param name="serverPort">Server port.</param>
+        /// <param name="serverSsl">Enable or disable SSL when connecting to the server.</param>
+        /// <param name="tokenSource">Cancellation token source.</param>
         public ConstellationWorkerBase(LoggingModule logging, string serverHostname, int serverPort, bool serverSsl, CancellationTokenSource tokenSource = null)
         {
             _Logging = logging ?? new LoggingModule();
@@ -86,6 +118,10 @@
             _Websocket.MessageReceived += ServerMessageReceived;
         }
 
+        /// <summary>
+        /// Dispose.
+        /// </summary>
+        /// <param name="disposing">Disposing.</param>
         protected virtual async void Dispose(bool disposing)
         {
             if (!_Disposed)
@@ -110,6 +146,9 @@
             }
         }
 
+        /// <summary>
+        /// Dispose.
+        /// </summary>
         public void Dispose()
         {
             if (_Disposed) throw new ObjectDisposedException(nameof(ConstellationWorkerBase));
@@ -117,6 +156,10 @@
             GC.SuppressFinalize(this);
         }
 
+        /// <summary>
+        /// Start the worker.
+        /// </summary>
+        /// <returns>Task.</returns>
         public async Task Start()
         {
             if (_Disposed) throw new ObjectDisposedException(nameof(ConstellationWorkerBase));
@@ -126,6 +169,10 @@
             _MaintainConnection = Task.Run(() => MaintainConnection(), _TokenSource.Token);
         }
 
+        /// <summary>
+        /// Stop the worker.
+        /// </summary>
+        /// <returns>Task.</returns>
         public async Task Stop()
         {
             if (_Disposed) throw new ObjectDisposedException(nameof(ConstellationWorkerBase));
@@ -133,10 +180,25 @@
             _Websocket?.StopAsync(WebSocketCloseStatus.NormalClosure, "The websocket connection was closed by the administrator.");
         }
 
+        /// <summary>
+        /// Method to invoke when a request is received.
+        /// </summary>
+        /// <param name="req">Websocket message.</param>
+        /// <returns>Websocket message.</returns>
         public abstract Task<WebsocketMessage> OnRequestReceived(WebsocketMessage req);
 
+        /// <summary>
+        /// Method to invoke when connected to the server.
+        /// </summary>
+        /// <param name="guid">GUID.</param>
+        /// <returns>Task.</returns>
         public abstract Task OnConnection(Guid guid);
 
+        /// <summary>
+        /// Method to invoke when disconnected from the server.
+        /// </summary>
+        /// <param name="guid">GUID.</param>
+        /// <returns>Task.</returns>
         public abstract Task OnDisconnection(Guid guid);
 
         private void ServerDisconnected(object sender, EventArgs e)
