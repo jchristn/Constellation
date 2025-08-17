@@ -5,10 +5,10 @@
 # Constellation
 
 <p align="center">
-  Constellation.Controller <a href="https://www.nuget.org/packages/Constellation.Controller"><img src="https://img.shields.io/nuget/v/Constellation.Controller.svg" alt="NuGet Version"></a> | <a href="https://www.nuget.org/packages/Constellation.Controller"><img src="https://img.shields.io/nuget/dt/Constellation.Controller.svg" alt="NuGet Downloads"></a> <a href="https://github.com/jchristn/constellation/blob/main/LICENSE"><img src="https://img.shields.io/github/license/jchristn/constellation" alt="License"></a>
+  Controller <a href="https://www.nuget.org/packages/Constellation.Controller"><img src="https://img.shields.io/nuget/v/Constellation.Controller.svg" alt="NuGet Version"></a> <a href="https://www.nuget.org/packages/Constellation.Controller"><img src="https://img.shields.io/nuget/dt/Constellation.Controller.svg" alt="NuGet Downloads"></a> <a href="https://github.com/jchristn/constellation/blob/main/LICENSE"><img src="https://img.shields.io/github/license/jchristn/constellation" alt="License"></a>
 </p>
 <p align="center">
-  Constellation.Worker <a href="https://www.nuget.org/packages/Constellation.Worker"><img src="https://img.shields.io/nuget/v/Constellation.Worker.svg" alt="NuGet Version"></a> <a href="https://www.nuget.org/packages/Constellation.Worker"><img src="https://img.shields.io/nuget/dt/Constellation.Worker.svg" alt="NuGet Downloads"></a> <a href="https://github.com/jchristn/constellation/blob/main/LICENSE"><img src="https://img.shields.io/github/license/jchristn/constellation" alt="License"></a>
+  Worker <a href="https://www.nuget.org/packages/Constellation.Worker"><img src="https://img.shields.io/nuget/v/Constellation.Worker.svg" alt="NuGet Version"></a> <a href="https://www.nuget.org/packages/Constellation.Worker"><img src="https://img.shields.io/nuget/dt/Constellation.Worker.svg" alt="NuGet Downloads"></a> <a href="https://github.com/jchristn/constellation/blob/main/LICENSE"><img src="https://img.shields.io/github/license/jchristn/constellation" alt="License"></a>
 </p>
 
 **RESTful workload placement and virtualization for exactly-one resource ownership patterns**
