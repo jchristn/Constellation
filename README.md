@@ -4,11 +4,57 @@
 
 # Constellation
 
-<p align="center">
-  Controller <a href="https://www.nuget.org/packages/Constellation.Controller"><img src="https://img.shields.io/nuget/v/Constellation.Controller.svg" alt="NuGet Version"></a> <a href="https://www.nuget.org/packages/Constellation.Controller"><img src="https://img.shields.io/nuget/dt/Constellation.Controller.svg" alt="NuGet Downloads"></a> <a href="https://github.com/jchristn/constellation/blob/main/LICENSE"><img src="https://img.shields.io/github/license/jchristn/constellation" alt="License"></a>
-</p>
-<p align="center">
-  Worker <a href="https://www.nuget.org/packages/Constellation.Worker"><img src="https://img.shields.io/nuget/v/Constellation.Worker.svg" alt="NuGet Version"></a> <a href="https://www.nuget.org/packages/Constellation.Worker"><img src="https://img.shields.io/nuget/dt/Constellation.Worker.svg" alt="NuGet Downloads"></a> <a href="https://github.com/jchristn/constellation/blob/main/LICENSE"><img src="https://img.shields.io/github/license/jchristn/constellation" alt="License"></a>
+<p align="center"><div style="display: flex; justify-content: center;">
+<div>
+  <table>
+    <thead>
+      <tr>
+        <th>Project</th>
+        <th>Package</th>
+        <th>Downloads</th>
+        <th>License</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Controller</td>
+        <td>
+          <a href="https://www.nuget.org/packages/Constellation.Controller">
+            <img src="https://img.shields.io/nuget/v/Constellation.Controller.svg" alt="NuGet Version">
+          </a>
+        </td>
+        <td>
+          <a href="https://www.nuget.org/packages/Constellation.Controller">
+            <img src="https://img.shields.io/nuget/dt/Constellation.Controller.svg" alt="NuGet Downloads">
+          </a>
+        </td>
+        <td>
+          <a href="https://github.com/jchristn/constellation/blob/main/LICENSE">
+            <img src="https://img.shields.io/github/license/jchristn/constellation" alt="License">
+          </a>
+        </td>
+      </tr>
+      <tr>
+        <td>Worker</td>
+        <td>
+          <a href="https://www.nuget.org/packages/Constellation.Worker">
+            <img src="https://img.shields.io/nuget/v/Constellation.Worker.svg" alt="NuGet Version">
+          </a>
+        </td>
+        <td>
+          <a href="https://www.nuget.org/packages/Constellation.Worker">
+            <img src="https://img.shields.io/nuget/dt/Constellation.Worker.svg" alt="NuGet Downloads">
+          </a>
+        </td>
+        <td>
+          <a href="https://github.com/jchristn/constellation/blob/main/LICENSE">
+            <img src="https://img.shields.io/github/license/jchristn/constellation" alt="License">
+          </a>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
 </p>
 
 **RESTful workload placement and virtualization for exactly-one resource ownership patterns**
