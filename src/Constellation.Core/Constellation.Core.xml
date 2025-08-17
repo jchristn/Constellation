@@ -1,0 +1,653 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Constellation.Core</name>
+    </assembly>
+    <members>
+        <member name="T:Constellation.Core.ApiErrorEnum">
+            <summary>
+            API error codes.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.ApiErrorEnum.AuthenticationFailed">
+            <summary>
+            Authentication failed.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.ApiErrorEnum.AuthorizationFailed">
+            <summary>
+            Authorization failed.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.ApiErrorEnum.BadGateway">
+            <summary>
+            Bad gateway.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.ApiErrorEnum.BadRequest">
+            <summary>
+            Bad request.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.ApiErrorEnum.Conflict">
+            <summary>
+            Conflict.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.ApiErrorEnum.DeserializationError">
+            <summary>
+            DeserializationError.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.ApiErrorEnum.Inactive">
+            <summary>
+            Inactive.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.ApiErrorEnum.InternalError">
+            <summary>
+            Internal error.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.ApiErrorEnum.InvalidEmail">
+            <summary>
+            Invalid email.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.ApiErrorEnum.InvalidRange">
+            <summary>
+            Invalid range.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.ApiErrorEnum.InUse">
+            <summary>
+            In use.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.ApiErrorEnum.NotEmpty">
+            <summary>
+            Not empty.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.ApiErrorEnum.NotFound">
+            <summary>
+            Not found.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.ApiErrorEnum.RequestBodyMissing">
+            <summary>
+            Request body missing.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.ApiErrorEnum.RequiredPropertiesMissing">
+            <summary>
+            Required properties were missing.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.ApiErrorEnum.Timeout">
+            <summary>
+            Timeout.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.ApiErrorEnum.TokenExpired">
+            <summary>
+            Token expired.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.ApiErrorEnum.TooLarge">
+            <summary>
+            Request too large.
+            </summary>
+        </member>
+        <member name="T:Constellation.Core.ApiErrorResponse">
+            <summary>
+            API error response.
+            </summary>
+        </member>
+        <member name="P:Constellation.Core.ApiErrorResponse.Error">
+            <summary>
+            Error.
+            </summary>
+        </member>
+        <member name="P:Constellation.Core.ApiErrorResponse.Message">
+            <summary>
+            Human-readable message.
+            </summary>
+        </member>
+        <member name="P:Constellation.Core.ApiErrorResponse.StatusCode">
+            <summary>
+            HTTP status code.
+            </summary>
+        </member>
+        <member name="P:Constellation.Core.ApiErrorResponse.Context">
+            <summary>
+            Additional contextual information.
+            </summary>
+        </member>
+        <member name="P:Constellation.Core.ApiErrorResponse.Description">
+            <summary>
+            Description.
+            </summary>
+        </member>
+        <member name="M:Constellation.Core.ApiErrorResponse.#ctor">
+            <summary>
+            Instantiate.
+            </summary>
+        </member>
+        <member name="M:Constellation.Core.ApiErrorResponse.#ctor(Constellation.Core.ApiErrorEnum,System.Object,System.String)">
+            <summary>
+            Instantiate.
+            </summary>
+            <param name="error">Error code.</param>
+            <param name="context">Context.</param>
+            <param name="description">Description.</param>
+            
+        </member>
+        <member name="T:Constellation.Core.Constants">
+            <summary>
+            Constants.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Constants.Logo">
+            <summary>
+            Logo.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Constants.TimestampFormat">
+            <summary>
+            Timestamp format.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Constants.SettingsFile">
+            <summary>
+            Settings file.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Constants.DatabaseFile">
+            <summary>
+            Database filename.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Constants.LogFilename">
+            <summary>
+            Log filename.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Constants.LogDirectory">
+            <summary>
+            Log directory.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Constants.Copyright">
+            <summary>
+            Copyright.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Constants.AuthorizationHeader">
+            <summary>
+            Authorization header.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Constants.WorkerNameHeader">
+            <summary>
+            Worker name header.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Constants.RequestGuidHeader">
+            <summary>
+            Request GUID header.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Constants.ForwardedForHeader">
+            <summary>
+            Forwarded for header, generally x-forwarded-for.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Constants.BinaryContentType">
+            <summary>
+            Binary content type.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Constants.JsonContentType">
+            <summary>
+            JSON content type.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Constants.HtmlContentType">
+            <summary>
+            HTML content type.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Constants.PngContentType">
+            <summary>
+            PNG content type.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Constants.TextContentType">
+            <summary>
+            Text content type.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Constants.FaviconFilename">
+            <summary>
+            Favicon filename.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Constants.FaviconContentType">
+            <summary>
+            Favicon content type.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Constants.HtmlHomepage">
+            <summary>
+            Default HTML homepage.
+            </summary>
+        </member>
+        <member name="T:Constellation.Core.ControllerNode">
+            <summary>
+            Controller node.
+            </summary>
+        </member>
+        <member name="T:Constellation.Core.HttpResponseDetails">
+            <summary>
+            HTTP response details.
+            This object is used within the response sent to the controller by the worker.
+            </summary>
+        </member>
+        <member name="P:Constellation.Core.HttpResponseDetails.Headers">
+            <summary>
+            Headers.
+            </summary>
+        </member>
+        <member name="T:Constellation.Core.Serialization.DateTimeConverter">
+            <summary>
+            DateTime converter.
+            </summary>
+        </member>
+        <member name="M:Constellation.Core.Serialization.DateTimeConverter.Read(System.Text.Json.Utf8JsonReader@,System.Type,System.Text.Json.JsonSerializerOptions)">
+            <summary>
+            Read.
+            </summary>
+            <param name="reader">Reader.</param>
+            <param name="typeToConvert">Type to convert.</param>
+            <param name="options">JSON serializer options.</param>
+            <returns>DateTime.</returns>
+        </member>
+        <member name="M:Constellation.Core.Serialization.DateTimeConverter.Write(System.Text.Json.Utf8JsonWriter,System.DateTime,System.Text.Json.JsonSerializerOptions)">
+            <summary>
+            Write.
+            </summary>
+            <param name="writer">Writer.</param>
+            <param name="dateTimeValue">Value.</param>
+            <param name="options">JSON serializer options.</param>
+        </member>
+        <member name="T:Constellation.Core.Serialization.ExceptionConverter`1">
+            <summary>
+            Exception converter.
+            </summary>
+            <typeparam name="TExceptionType">Exception type.</typeparam>
+        </member>
+        <member name="M:Constellation.Core.Serialization.ExceptionConverter`1.CanConvert(System.Type)">
+            <summary>
+            Can convert.
+            </summary>
+            <param name="typeToConvert">Type to convert.</param>
+            <returns>True if convertible.</returns>
+        </member>
+        <member name="M:Constellation.Core.Serialization.ExceptionConverter`1.Read(System.Text.Json.Utf8JsonReader@,System.Type,System.Text.Json.JsonSerializerOptions)">
+            <summary>
+            Read.
+            </summary>
+            <param name="reader">Reader.</param>
+            <param name="typeToConvert">Type to convert.</param>
+            <param name="options">JSON serializer options.</param>
+            <returns>Instance.</returns>
+        </member>
+        <member name="M:Constellation.Core.Serialization.ExceptionConverter`1.Write(System.Text.Json.Utf8JsonWriter,`0,System.Text.Json.JsonSerializerOptions)">
+            <summary>
+            Write.
+            </summary>
+            <param name="writer">Writer.</param>
+            <param name="value">Value.</param>
+            <param name="options">JSON serializer options.</param>
+        </member>
+        <member name="T:Constellation.Core.Serialization.ExpressionConverter">
+            <summary>
+            Expression converter.
+            </summary>
+        </member>
+        <member name="M:Constellation.Core.Serialization.ExpressionConverter.Read(System.Text.Json.Utf8JsonReader@,System.Type,System.Text.Json.JsonSerializerOptions)">
+            <summary>
+            Read.
+            </summary>
+            <param name="reader">Reader.</param>
+            <param name="typeToConvert">Type to convert.</param>
+            <param name="options">Options.</param>
+            <returns>Expr.</returns>
+        </member>
+        <member name="M:Constellation.Core.Serialization.ExpressionConverter.Write(System.Text.Json.Utf8JsonWriter,ExpressionTree.Expr,System.Text.Json.JsonSerializerOptions)">
+            <summary>
+            Write.
+            </summary>
+            <param name="writer">Writer.</param>
+            <param name="value">Value.</param>
+            <param name="options">Options.</param>
+        </member>
+        <member name="T:Constellation.Core.Serialization.IPAddressConverter">
+            <summary>
+            IP address converter.
+            </summary>
+        </member>
+        <member name="M:Constellation.Core.Serialization.IPAddressConverter.Read(System.Text.Json.Utf8JsonReader@,System.Type,System.Text.Json.JsonSerializerOptions)">
+            <summary>
+            Read.
+            </summary>
+            <param name="reader">Reader.</param>
+            <param name="typeToConvert">Type to convert.</param>
+            <param name="options">JSON serializer options.</param>
+            <returns>IPAddress.</returns>
+        </member>
+        <member name="M:Constellation.Core.Serialization.IPAddressConverter.Write(System.Text.Json.Utf8JsonWriter,System.Net.IPAddress,System.Text.Json.JsonSerializerOptions)">
+            <summary>
+            Write.
+            </summary>
+            <param name="writer">Writer.</param>
+            <param name="value">Value.</param>
+            <param name="options">JSON serializer options.</param>
+        </member>
+        <member name="T:Constellation.Core.Serialization.NameValueCollectionConverter">
+            <summary>
+            NameValueCollection converter.
+            </summary>
+        </member>
+        <member name="M:Constellation.Core.Serialization.NameValueCollectionConverter.Read(System.Text.Json.Utf8JsonReader@,System.Type,System.Text.Json.JsonSerializerOptions)">
+            <summary>
+            Read.
+            </summary>
+            <param name="reader">Reader.</param>
+            <param name="typeToConvert">Type to convert.</param>
+            <param name="options">JSON serializer options.</param>
+            <returns>NameValueCollection.</returns>
+        </member>
+        <member name="M:Constellation.Core.Serialization.NameValueCollectionConverter.Write(System.Text.Json.Utf8JsonWriter,System.Collections.Specialized.NameValueCollection,System.Text.Json.JsonSerializerOptions)">
+            <summary>
+            Write.
+            </summary>
+            <param name="writer">Writer.</param>
+            <param name="value">Value.</param>
+            <param name="options">JSON serializer options.</param>
+        </member>
+        <member name="T:Constellation.Core.Serialization.Serializer">
+            <summary>
+            Serializer.
+            </summary>
+        </member>
+        <member name="M:Constellation.Core.Serialization.Serializer.#ctor">
+            <summary>
+            Instantiate.
+            </summary>
+        </member>
+        <member name="M:Constellation.Core.Serialization.Serializer.InstantiateConverters">
+            <summary>
+            Instantiation method to support fixups for various environments, e.g. Unity.
+            </summary>
+        </member>
+        <member name="M:Constellation.Core.Serialization.Serializer.DeserializeJson``1(System.String)">
+            <summary>
+            Deserialize JSON to an instance.
+            </summary>
+            <typeparam name="T">Type.</typeparam>
+            <param name="json">JSON string.</param>
+            <returns>Instance.</returns>
+        </member>
+        <member name="M:Constellation.Core.Serialization.Serializer.DeserializeJson``1(System.Byte[])">
+            <summary>
+            Deserialize JSON to an instance.
+            </summary>
+            <typeparam name="T">Type.</typeparam>
+            <param name="bytes">Bytes containing JSON.</param>
+            <returns>Instance.</returns>
+        </member>
+        <member name="M:Constellation.Core.Serialization.Serializer.SerializeJson(System.Object,System.Boolean)">
+            <summary>
+            Serialize object to JSON.
+            </summary>
+            <param name="obj">Object.</param>
+            <param name="pretty">Pretty print.</param>
+            <returns>JSON.</returns>
+        </member>
+        <member name="M:Constellation.Core.Serialization.Serializer.SerializeJson(System.Exception,System.Boolean)">
+            <summary>
+            Serialize an exception to JSON.
+            </summary>
+            <param name="e">Exception.</param>
+            <param name="pretty">Pretty print.</param>
+            <returns>JSON.</returns>
+        </member>
+        <member name="M:Constellation.Core.Serialization.Serializer.CopyObject``1(System.Object)">
+            <summary>
+            Copy an object.
+            </summary>
+            <typeparam name="T">Type.</typeparam>
+            <param name="o">Object.</param>
+            <returns>Instance.</returns>
+        </member>
+        <member name="M:Constellation.Core.Serialization.Serializer.DeserializeXml``1(System.Byte[])">
+            <summary>
+            Deserialize XML.
+            </summary>
+            <typeparam name="T">Type.</typeparam>
+            <param name="bytes">XML data.</param>
+            <returns>Instance.</returns>
+        </member>
+        <member name="M:Constellation.Core.Serialization.Serializer.DeserializeXml``1(System.String)">
+            <summary>
+            Deserialize XML.
+            </summary>
+            <typeparam name="T">Type.</typeparam>
+            <param name="xml">XML string.</param>
+            <returns>Instance.</returns>
+        </member>
+        <member name="M:Constellation.Core.Serialization.Serializer.SerializeXml(System.Object,System.Boolean)">
+            <summary>
+            Serialize XML.
+            </summary>
+            <param name="obj">Object.</param>
+            <param name="pretty">Pretty print.</param>
+            <returns>XML string.</returns>
+        </member>
+        <member name="T:Constellation.Core.Serialization.StrictEnumConverter`1">
+            <summary>
+            Strict enum converter.
+            </summary>
+        </member>
+        <member name="M:Constellation.Core.Serialization.StrictEnumConverter`1.Read(System.Text.Json.Utf8JsonReader@,System.Type,System.Text.Json.JsonSerializerOptions)">
+            <summary>
+            Read.
+            </summary>
+            <param name="reader">Reader.</param>
+            <param name="typeToConvert">Type to convert.</param>
+            <param name="options">JSON serializer options.</param>
+            <returns>DateTime.</returns>
+        </member>
+        <member name="M:Constellation.Core.Serialization.StrictEnumConverter`1.Write(System.Text.Json.Utf8JsonWriter,`0,System.Text.Json.JsonSerializerOptions)">
+            <summary>
+            Write.
+            </summary>
+            <param name="writer">Writer.</param>
+            <param name="value">Value.</param>
+            <param name="options">JSON serializer options.</param>
+        </member>
+        <member name="T:Constellation.Core.Serialization.StrictEnumConverterFactory">
+            <summary>
+            Strict enum converter factory.
+            </summary>
+        </member>
+        <member name="M:Constellation.Core.Serialization.StrictEnumConverterFactory.CanConvert(System.Type)">
+            <summary>
+            Can convert.
+            </summary>
+            <param name="typeToConvert">Type to convert.</param>
+            <returns>True if convertible.</returns>
+        </member>
+        <member name="M:Constellation.Core.Serialization.StrictEnumConverterFactory.CreateConverter(System.Type,System.Text.Json.JsonSerializerOptions)">
+            <summary>
+            Create converter.
+            </summary>
+            <param name="typeToConvert">Type to convert.</param>
+            <param name="options">JSON serializer options.</param>
+            <returns>JsonConverter.</returns>
+        </member>
+        <member name="T:Constellation.Core.UrlDetails">
+            <summary>
+            URL details.
+            This object is used within the request proxied from from the controller to the worker.
+            </summary>
+        </member>
+        <member name="P:Constellation.Core.UrlDetails.Uri">
+            <summary>
+            URI.
+            </summary>
+        </member>
+        <member name="P:Constellation.Core.UrlDetails.Url">
+            <summary>
+            URL.
+            </summary>
+        </member>
+        <member name="P:Constellation.Core.UrlDetails.UrlWithoutQuery">
+            <summary>
+            URL without query.
+            </summary>
+        </member>
+        <member name="P:Constellation.Core.UrlDetails.PathAndQuery">
+            <summary>
+            Path and query.
+            </summary>
+        </member>
+        <member name="P:Constellation.Core.UrlDetails.Path">
+            <summary>
+            Path.
+            </summary>
+        </member>
+        <member name="P:Constellation.Core.UrlDetails.PathSegments">
+            <summary>
+            Path segments.
+            </summary>
+        </member>
+        <member name="P:Constellation.Core.UrlDetails.QueryElements">
+            <summary>
+            Query elements.
+            </summary>
+        </member>
+        <member name="M:Constellation.Core.UrlDetails.#ctor">
+            <summary>
+            URL details.
+            </summary>
+        </member>
+        <member name="T:Constellation.Core.WebsocketMessage">
+            <summary>
+            Websocket message.
+            </summary>
+        </member>
+        <member name="P:Constellation.Core.WebsocketMessage.GUID">
+            <summary>
+            GUID.
+            </summary>
+        </member>
+        <member name="P:Constellation.Core.WebsocketMessage.Type">
+            <summary>
+            Tye type of message.
+            </summary>
+        </member>
+        <member name="P:Constellation.Core.WebsocketMessage.TimestampUtc">
+            <summary>
+            Timestamp of the message.
+            </summary>
+        </member>
+        <member name="P:Constellation.Core.WebsocketMessage.ExpirationUtc">
+            <summary>
+            Expiration timestamp for the message.
+            </summary>
+        </member>
+        <member name="P:Constellation.Core.WebsocketMessage.StatusCode">
+            <summary>
+            HTTP status code.
+            </summary>
+        </member>
+        <member name="P:Constellation.Core.WebsocketMessage.Method">
+            <summary>
+            HTTP method.
+            </summary>
+        </member>
+        <member name="P:Constellation.Core.WebsocketMessage.ContentType">
+            <summary>
+            Content-type.
+            </summary>
+        </member>
+        <member name="P:Constellation.Core.WebsocketMessage.Url">
+            <summary>
+            URL details.
+            </summary>
+        </member>
+        <member name="P:Constellation.Core.WebsocketMessage.Headers">
+            <summary>
+            Headers.
+            </summary>
+        </member>
+        <member name="P:Constellation.Core.WebsocketMessage.Data">
+            <summary>
+            Data.
+            </summary>
+        </member>
+        <member name="M:Constellation.Core.WebsocketMessage.#ctor">
+            <summary>
+            Websocket message.
+            </summary>
+        </member>
+        <member name="T:Constellation.Core.WebsocketMessageTypeEnum">
+            <summary>
+            Websocket message type enum.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.WebsocketMessageTypeEnum.Unknown">
+            <summary>
+            Unknown.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.WebsocketMessageTypeEnum.Heartbeat">
+            <summary>
+            Heartbeat.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.WebsocketMessageTypeEnum.Request">
+            <summary>
+            Request.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.WebsocketMessageTypeEnum.Response">
+            <summary>
+            Response.
+            </summary>
+        </member>
+        <member name="T:Constellation.Core.WorkerNode">
+            <summary>
+            Worker node.
+            </summary>
+        </member>
+        <member name="P:Constellation.Core.WorkerNode.GUID">
+            <summary>
+            GUID.
+            </summary>
+        </member>
+        <member name="T:Constellation.Core.WorkerRemovedEventArgs">
+            <summary>
+            Worker removed event.
+            </summary>
+        </member>
+        <member name="P:Constellation.Core.WorkerRemovedEventArgs.GUID">
+            <summary>
+            GUID of the removed worker.
+            </summary>
+        </member>
+    </members>
+</doc>

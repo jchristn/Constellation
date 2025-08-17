@@ -2,16 +2,24 @@
 
 	<PropertyGroup>
 		<TargetFramework>net8.0</TargetFramework>
+		<GenerateDocumentationFile>True</GenerateDocumentationFile>
+		<DocumentationFile>Constellation.Controller.xml</DocumentationFile>
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="SyslogLogging" Version="2.0.8" />
-	  <PackageReference Include="Watson" Version="6.3.10" />
-	  <PackageReference Include="WatsonWebsocket" Version="4.1.5" />
+		<PackageReference Include="SyslogLogging" Version="2.0.8" />
+		<PackageReference Include="Watson" Version="6.3.10" />
+		<PackageReference Include="WatsonWebsocket" Version="4.1.5" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\Constellation.Core\Constellation.Core.csproj" />
+		<ProjectReference Include="..\Constellation.Core\Constellation.Core.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Update="Constellation.Controller.xml">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
 	</ItemGroup>
 
 </Project>

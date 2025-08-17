@@ -1,0 +1,306 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Constellation.Controller</name>
+    </assembly>
+    <members>
+        <member name="T:Constellation.Controller.ConstellationControllerBase">
+            <summary>
+            Constellation controller base class.
+            </summary>
+        </member>
+        <member name="P:Constellation.Controller.ConstellationControllerBase.Settings">
+            <summary>
+            Settings.
+            </summary>
+        </member>
+        <member name="P:Constellation.Controller.ConstellationControllerBase.Workers">
+            <summary>
+            List of workers.
+            </summary>
+        </member>
+        <member name="P:Constellation.Controller.ConstellationControllerBase.Webserver">
+            <summary>
+            Webserver.
+            </summary>
+        </member>
+        <member name="P:Constellation.Controller.ConstellationControllerBase.Websocket">
+            <summary>
+            Websocket server.
+            </summary>
+        </member>
+        <member name="M:Constellation.Controller.ConstellationControllerBase.#ctor(Constellation.Controller.Settings,SyslogLogging.LoggingModule,System.Threading.CancellationTokenSource)">
+            <summary>
+            Constellation controller base class.
+            </summary>
+            <param name="settings">Settings.</param>
+            <param name="logging">Logging.</param>
+            <param name="tokenSource">Cancellation token source.</param>
+        </member>
+        <member name="M:Constellation.Controller.ConstellationControllerBase.Dispose(System.Boolean)">
+            <summary>
+            Dispose.
+            </summary>
+            <param name="disposing">Disposing.</param>
+        </member>
+        <member name="M:Constellation.Controller.ConstellationControllerBase.Dispose">
+            <summary>
+            Dispose.
+            </summary>
+        </member>
+        <member name="M:Constellation.Controller.ConstellationControllerBase.Start">
+            <summary>
+            Start the controller.
+            </summary>
+            <returns>Task.</returns>
+        </member>
+        <member name="M:Constellation.Controller.ConstellationControllerBase.Stop">
+            <summary>
+            Stop the controller.
+            </summary>
+            <returns>Task.</returns>
+        </member>
+        <member name="M:Constellation.Controller.ConstellationControllerBase.OnConnection(System.Guid,System.String,System.Int32)">
+            <summary>
+            Method to fire on worker connection.
+            </summary>
+            <param name="guid">GUID of the worker.</param>
+            <param name="ipAddress">IP address of the worker.</param>
+            <param name="port">Port of the worker.</param>
+            <returns>Task.</returns>
+        </member>
+        <member name="M:Constellation.Controller.ConstellationControllerBase.OnDisconnection(System.Guid,System.String,System.Int32)">
+            <summary>
+            Method to fire on worker disconnection.
+            </summary>
+            <param name="guid">GUID of the worker.</param>
+            <param name="ipAddress">IP address of the worker.</param>
+            <param name="port">Port of the worker.</param>
+            <returns>Task.</returns>
+        </member>
+        <member name="T:Constellation.Controller.HeartbeatSettings">
+            <summary>
+            Heartbeat settings.
+            </summary>
+        </member>
+        <member name="P:Constellation.Controller.HeartbeatSettings.IntervalMs">
+            <summary>
+            Interval at which heartbeats are sent, in milliseconds.  Minimum value is 1000.  Default is 2000.
+            </summary>
+        </member>
+        <member name="P:Constellation.Controller.HeartbeatSettings.MaxFailures">
+            <summary>
+            Maximum number of heartbeat failures before a worker is taken out of rotation.  Minimum value is 1.  Default is 5.
+            </summary>
+        </member>
+        <member name="M:Constellation.Controller.HeartbeatSettings.#ctor">
+            <summary>
+            Heartbeat settings.
+            </summary>
+        </member>
+        <member name="T:Constellation.Controller.LoggingSettings">
+            <summary>
+            Logging settings.
+            </summary>
+        </member>
+        <member name="P:Constellation.Controller.LoggingSettings.Servers">
+            <summary>
+            List of syslog servers.
+            </summary>
+        </member>
+        <member name="P:Constellation.Controller.LoggingSettings.LogDirectory">
+            <summary>
+            Log directory.
+            </summary>
+        </member>
+        <member name="P:Constellation.Controller.LoggingSettings.LogFilename">
+            <summary>
+            Log filename.
+            </summary>
+        </member>
+        <member name="P:Constellation.Controller.LoggingSettings.ConsoleLogging">
+            <summary>
+            Enable or disable console logging.
+            </summary>
+        </member>
+        <member name="P:Constellation.Controller.LoggingSettings.EnableColors">
+            <summary>
+            Enable colors in logging.
+            </summary>
+        </member>
+        <member name="P:Constellation.Controller.LoggingSettings.MinimumSeverity">
+            <summary>
+            Minimum severity.
+            </summary>
+        </member>
+        <member name="M:Constellation.Controller.LoggingSettings.#ctor">
+            <summary>
+            Instantiate.
+            </summary>
+        </member>
+        <member name="T:Constellation.Controller.ProxySettings">
+            <summary>
+            Proxy settings.
+            </summary>
+        </member>
+        <member name="P:Constellation.Controller.ProxySettings.TimeoutMs">
+            <summary>
+            Request timeout, in milliseconds.  Minimum value is 1000.  Default is 30000.
+            </summary>
+        </member>
+        <member name="P:Constellation.Controller.ProxySettings.ResponseRetentionMs">
+            <summary>
+            Response retention time, in milliseconds.  Minimum value is 1000.  Default is 30000.
+            </summary>
+        </member>
+        <member name="M:Constellation.Controller.ProxySettings.#ctor">
+            <summary>
+            Proxy settings.
+            </summary>
+        </member>
+        <member name="T:Constellation.Controller.Settings">
+            <summary>
+            Settings.
+            </summary>
+        </member>
+        <member name="P:Constellation.Controller.Settings.Webserver">
+            <summary>
+            Webserver settings.
+            </summary>
+        </member>
+        <member name="P:Constellation.Controller.Settings.Websocket">
+            <summary>
+            Websocket settings.
+            </summary>
+        </member>
+        <member name="P:Constellation.Controller.Settings.Heartbeat">
+            <summary>
+            Heartbeat settings.
+            </summary>
+        </member>
+        <member name="P:Constellation.Controller.Settings.Proxy">
+            <summary>
+            Proxy settings.
+            </summary>
+        </member>
+        <member name="P:Constellation.Controller.Settings.Logging">
+            <summary>
+            Logging settings.
+            </summary>
+        </member>
+        <member name="M:Constellation.Controller.Settings.#ctor">
+            <summary>
+            Settings.
+            </summary>
+        </member>
+        <member name="T:Constellation.Controller.WorkerMetadata">
+            <summary>
+            Worker metadata.
+            </summary>
+        </member>
+        <member name="P:Constellation.Controller.WorkerMetadata.GUID">
+            <summary>
+            GUID.
+            </summary>
+        </member>
+        <member name="P:Constellation.Controller.WorkerMetadata.Ip">
+            <summary>
+            IP address.
+            </summary>
+        </member>
+        <member name="P:Constellation.Controller.WorkerMetadata.Port">
+            <summary>
+            Port.
+            </summary>
+        </member>
+        <member name="P:Constellation.Controller.WorkerMetadata.Healthy">
+            <summary>
+            Boolean indicating if the worker is healthy.
+            </summary>
+        </member>
+        <member name="P:Constellation.Controller.WorkerMetadata.AddedUtc">
+            <summary>
+            UTC timestamp from when the worker was added.
+            </summary>
+        </member>
+        <member name="P:Constellation.Controller.WorkerMetadata.LastMessageUtc">
+            <summary>
+            UTC timestamp from when the last message was received.
+            </summary>
+        </member>
+        <member name="F:Constellation.Controller.WorkerMetadata.TokenSource">
+            <summary>
+            Cancellation token source.
+            </summary>
+        </member>
+        <member name="M:Constellation.Controller.WorkerMetadata.#ctor(Constellation.Controller.Settings,WatsonWebsocket.WatsonWsServer,SyslogLogging.LoggingModule,System.Guid,System.String,System.Int32,System.Threading.CancellationTokenSource)">
+            <summary>
+            Worker metadata.
+            </summary>
+            <param name="settings">Settings.</param>
+            <param name="server">Server.</param>
+            <param name="logging">Logging module.</param>
+            <param name="guid">GUID.</param>
+            <param name="ip">IP.</param>
+            <param name="port">Port.</param>
+            <param name="tokenSource">Cancellation token source.</param>
+        </member>
+        <member name="T:Constellation.Controller.WorkerService">
+            <summary>
+            Worker service.
+            </summary>
+        </member>
+        <member name="P:Constellation.Controller.WorkerService.Workers">
+            <summary>
+            List of workers.
+            </summary>
+        </member>
+        <member name="M:Constellation.Controller.WorkerService.#ctor(Constellation.Controller.Settings,SyslogLogging.LoggingModule)">
+            <summary>
+            Worker service.
+            </summary>
+            <param name="settings"></param>
+            <param name="logging"></param>
+            <exception cref="T:System.ArgumentNullException"></exception>
+        </member>
+        <member name="M:Constellation.Controller.WorkerService.GetByResource(System.String)">
+            <summary>
+            Retrieve worker by resource.
+            </summary>
+            <param name="resource">Resource.</param>
+            <returns>WorkerMetadata.</returns>
+        </member>
+        <member name="M:Constellation.Controller.WorkerService.GetByGuid(System.Guid)">
+            <summary>
+            Retrieve worker by GUID.
+            </summary>
+            <param name="guid">GUID.</param>
+            <returns>Worker metadata.</returns>
+        </member>
+        <member name="M:Constellation.Controller.WorkerService.AddWorker(Constellation.Controller.WorkerMetadata)">
+            <summary>
+            Add a worker.
+            </summary>
+            <param name="worker">Worker metadata.</param>
+        </member>
+        <member name="M:Constellation.Controller.WorkerService.RemoveWorker(System.Guid)">
+            <summary>
+            Remove a worker by GUID.
+            </summary>
+            <param name="guid">GUID.</param>
+            <returns>True if removed.</returns>
+        </member>
+        <member name="M:Constellation.Controller.WorkerService.GetResourceMappings">
+            <summary>
+            Retrieve resource mappings.
+            </summary>
+            <returns>Dictionary where the key is the resource and the value is the GUID of the worker.</returns>
+        </member>
+        <member name="M:Constellation.Controller.WorkerService.ClearResourceMapping(System.String)">
+            <summary>
+            Remove resource mappings for a given resource.
+            </summary>
+            <param name="resource">Resource.</param>
+        </member>
+    </members>
+</doc>

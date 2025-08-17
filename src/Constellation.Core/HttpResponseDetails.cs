@@ -9,13 +9,15 @@
     /// </summary>
     public class HttpResponseDetails
     {
+        /// <summary>
+        /// Headers.
+        /// </summary>
         public NameValueCollection Headers
         {
             get => _Headers;
             set => _Headers = value ?? new NameValueCollection(StringComparer.InvariantCultureIgnoreCase);
         }
 
-        private int _StatusCode = 200;
         private NameValueCollection _Headers = new NameValueCollection(StringComparer.InvariantCultureIgnoreCase);
     }
 }

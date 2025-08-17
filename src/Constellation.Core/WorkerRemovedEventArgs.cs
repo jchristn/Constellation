@@ -10,6 +10,9 @@
     /// </summary>
     public class WorkerRemovedEventArgs : EventArgs
     {
+        /// <summary>
+        /// GUID of the removed worker.
+        /// </summary>
         public Guid GUID { get; set; } = Guid.NewGuid();
     }
 }

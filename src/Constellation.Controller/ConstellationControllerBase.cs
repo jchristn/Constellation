@@ -20,16 +20,25 @@
     using ConnectionEventArgs = WatsonWebsocket.ConnectionEventArgs;
     using UrlDetails = Constellation.Core.UrlDetails;
 
+    /// <summary>
+    /// Constellation controller base class.
+    /// </summary>
     public abstract class ConstellationControllerBase : IDisposable
     {
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
 
+        /// <summary>
+        /// Settings.
+        /// </summary>
         public Settings Settings
         {
             get => _Settings;
             private set => _Settings = (value != null ? value : throw new ArgumentNullException(nameof(Settings)));
         }
 
+        /// <summary>
+        /// List of workers.
+        /// </summary>
         public List<WorkerMetadata> Workers
         {
             get
@@ -38,7 +47,14 @@
             }
         }
 
+        /// <summary>
+        /// Webserver.
+        /// </summary>
         public Webserver Webserver { get; private set; } = null;
+
+        /// <summary>
+        /// Websocket server.
+        /// </summary>
         public WatsonWsServer Websocket { get; private set; } = null;
 
         private string _Header = "[ConstellationController] ";
@@ -56,6 +72,12 @@
 
         private bool _Disposed = false;
 
+        /// <summary>
+        /// Constellation controller base class.
+        /// </summary>
+        /// <param name="settings">Settings.</param>
+        /// <param name="logging">Logging.</param>
+        /// <param name="tokenSource">Cancellation token source.</param>
         public ConstellationControllerBase(Settings settings, LoggingModule logging, CancellationTokenSource tokenSource = null)
         {
             _Settings = settings;
@@ -75,6 +97,10 @@
             Websocket.MessageReceived += WebsocketMessageReceived;
         }
 
+        /// <summary>
+        /// Dispose.
+        /// </summary>
+        /// <param name="disposing">Disposing.</param>
         protected virtual void Dispose(bool disposing)
         {
             if (!_Disposed)
@@ -95,6 +121,9 @@
             }
         }
 
+        /// <summary>
+        /// Dispose.
+        /// </summary>
         public void Dispose()
         {
             if (_Disposed) throw new ObjectDisposedException(nameof(ConstellationControllerBase));
@@ -263,6 +292,10 @@
             }
         }
 
+        /// <summary>
+        /// Start the controller.
+        /// </summary>
+        /// <returns>Task.</returns>
         public async Task Start()
         {
             if (Webserver != null && !Webserver.IsListening)
@@ -278,14 +311,32 @@
             }
         }
 
+        /// <summary>
+        /// Stop the controller.
+        /// </summary>
+        /// <returns>Task.</returns>
         public async Task Stop()
         {
             if (Webserver != null && Webserver.IsListening) Webserver.Stop();
             if (Websocket != null && Websocket.IsListening) Websocket.Stop();
         }
 
+        /// <summary>
+        /// Method to fire on worker connection.
+        /// </summary>
+        /// <param name="guid">GUID of the worker.</param>
+        /// <param name="ipAddress">IP address of the worker.</param>
+        /// <param name="port">Port of the worker.</param>
+        /// <returns>Task.</returns>
         public abstract Task OnConnection(Guid guid, string ipAddress, int port);
 
+        /// <summary>
+        /// Method to fire on worker disconnection.
+        /// </summary>
+        /// <param name="guid">GUID of the worker.</param>
+        /// <param name="ipAddress">IP address of the worker.</param>
+        /// <param name="port">Port of the worker.</param>
+        /// <returns>Task.</returns>
         public abstract Task OnDisconnection(Guid guid, string ipAddress, int port);
 
         private void WebsocketClientDisconnected(object sender, DisconnectionEventArgs e)

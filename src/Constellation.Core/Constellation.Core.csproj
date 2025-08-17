@@ -2,12 +2,20 @@
 
 	<PropertyGroup>
 		<TargetFramework>net8.0</TargetFramework>
+		<GenerateDocumentationFile>True</GenerateDocumentationFile>
+		<DocumentationFile>Constellation.Core.xml</DocumentationFile>
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="ExpressionTree" Version="1.1.2" />
-	  <PackageReference Include="SyslogLogging" Version="2.0.8" />
-	  <PackageReference Include="Timestamps" Version="1.0.11" />
+		<PackageReference Include="ExpressionTree" Version="1.1.2" />
+		<PackageReference Include="SyslogLogging" Version="2.0.8" />
+		<PackageReference Include="Timestamps" Version="1.0.11" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Update="Constellation.Core.xml">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
 	</ItemGroup>
 
 </Project>

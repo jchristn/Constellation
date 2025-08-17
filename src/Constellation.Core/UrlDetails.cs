@@ -11,18 +11,27 @@
     /// </summary>
     public class UrlDetails
     {
+        /// <summary>
+        /// URI.
+        /// </summary>
         public Uri Uri
         {
             get => _Uri;
             set => _Uri = value;
         }
 
+        /// <summary>
+        /// URL.
+        /// </summary>
         public string Url
         {
             get => _Uri?.ToString() ?? null;
             set => _Uri = (value != null ? new Uri(value) : null);
         }
 
+        /// <summary>
+        /// URL without query.
+        /// </summary>
         public string UrlWithoutQuery
         {
             get => _Uri != null
@@ -30,6 +39,9 @@
                 : null;
         }
 
+        /// <summary>
+        /// Path and query.
+        /// </summary>
         public string PathAndQuery
         {
             get => _Uri != null
@@ -37,11 +49,17 @@
                 : null;
         }
 
+        /// <summary>
+        /// Path.
+        /// </summary>
         public string Path
         {
             get => _Uri?.AbsolutePath ?? null;
         }
 
+        /// <summary>
+        /// Path segments.
+        /// </summary>
         public string[] PathSegments
         {
             get => _Uri?.AbsolutePath
@@ -49,6 +67,9 @@
                 ?? new string[0];
         }
 
+        /// <summary>
+        /// Query elements.
+        /// </summary>
         public NameValueCollection QueryElements
         {
             get => _Uri != null
@@ -57,5 +78,13 @@
         }
 
         private Uri _Uri = null;
+
+        /// <summary>
+        /// URL details.
+        /// </summary>
+        public UrlDetails()
+        {
+
+        }
     }
 }

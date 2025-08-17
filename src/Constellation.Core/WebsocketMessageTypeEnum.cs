@@ -10,9 +10,21 @@
     /// </summary>
     public enum WebsocketMessageTypeEnum
     {
+        /// <summary>
+        /// Unknown.
+        /// </summary>
         Unknown,
+        /// <summary>
+        /// Heartbeat.
+        /// </summary>
         Heartbeat,
+        /// <summary>
+        /// Request.
+        /// </summary>
         Request,
+        /// <summary>
+        /// Response.
+        /// </summary>
         Response
     }
 }

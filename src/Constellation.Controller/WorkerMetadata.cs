@@ -11,14 +11,44 @@
     using SyslogLogging;
     using WatsonWebsocket;
 
+    /// <summary>
+    /// Worker metadata.
+    /// </summary>
     public class WorkerMetadata
     {
+        /// <summary>
+        /// GUID.
+        /// </summary>
         public Guid GUID { get; set; } = Guid.NewGuid();
+
+        /// <summary>
+        /// IP address.
+        /// </summary>
         public string Ip { get; set; } = null;
+
+        /// <summary>
+        /// Port.
+        /// </summary>
         public int Port { get; set; } = 0;
+
+        /// <summary>
+        /// Boolean indicating if the worker is healthy.
+        /// </summary>
         public bool Healthy { get; set; } = true; // Start as healthy on connection
+
+        /// <summary>
+        /// UTC timestamp from when the worker was added.
+        /// </summary>
         public DateTime AddedUtc { get; set; } = DateTime.UtcNow;
+
+        /// <summary>
+        /// UTC timestamp from when the last message was received.
+        /// </summary>
         public DateTime LastMessageUtc { get; set; } = DateTime.UtcNow;
+
+        /// <summary>
+        /// Cancellation token source.
+        /// </summary>
         [JsonIgnore]
         public CancellationTokenSource TokenSource;
 
@@ -30,6 +60,16 @@
 
         private static Serializer _Serializer = new Serializer();
 
+        /// <summary>
+        /// Worker metadata.
+        /// </summary>
+        /// <param name="settings">Settings.</param>
+        /// <param name="server">Server.</param>
+        /// <param name="logging">Logging module.</param>
+        /// <param name="guid">GUID.</param>
+        /// <param name="ip">IP.</param>
+        /// <param name="port">Port.</param>
+        /// <param name="tokenSource">Cancellation token source.</param>
         public WorkerMetadata(
             Settings settings,
             WatsonWsServer server,

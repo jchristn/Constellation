@@ -13,6 +13,9 @@
     /// </summary>
     public class WorkerService
     {
+        /// <summary>
+        /// List of workers.
+        /// </summary>
         public List<WorkerMetadata> Workers
         {
             get

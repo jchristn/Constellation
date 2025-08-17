@@ -2,15 +2,23 @@
 
 	<PropertyGroup>
 		<TargetFramework>net8.0</TargetFramework>
+		<GenerateDocumentationFile>True</GenerateDocumentationFile>
+		<DocumentationFile>Constellation.Worker.xml</DocumentationFile>
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="SyslogLogging" Version="2.0.8" />
-	  <PackageReference Include="WatsonWebsocket" Version="4.1.5" />
+		<PackageReference Include="SyslogLogging" Version="2.0.8" />
+		<PackageReference Include="WatsonWebsocket" Version="4.1.5" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\Constellation.Core\Constellation.Core.csproj" />
+		<ProjectReference Include="..\Constellation.Core\Constellation.Core.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Update="Constellation.Worker.xml">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
 	</ItemGroup>
 
 </Project>

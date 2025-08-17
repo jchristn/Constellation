@@ -10,6 +10,9 @@
     /// </summary>
     public class WorkerNode
     {
+        /// <summary>
+        /// GUID.
+        /// </summary>
         public Guid GUID { get; set; } = Guid.NewGuid();
     }
 }
