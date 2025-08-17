@@ -54,6 +54,24 @@
           </a>
         </td>
       </tr>
+      <tr>
+        <td>Core</td>
+        <td>
+          <a href="https://www.nuget.org/packages/Constellation.Core">
+            <img src="https://img.shields.io/nuget/v/Constellation.Core.svg" alt="NuGet Version">
+          </a>
+        </td>
+        <td>
+          <a href="https://www.nuget.org/packages/Constellation.Core">
+            <img src="https://img.shields.io/nuget/dt/Constellation.Core.svg" alt="NuGet Downloads">
+          </a>
+        </td>
+        <td>
+          <a href="https://github.com/jchristn/constellation/blob/main/LICENSE">
+            <img src="https://img.shields.io/github/license/jchristn/constellation" alt="License">
+          </a>
+        </td>
+      </tr>
     </tbody>
   </table>
 </div>
