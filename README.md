@@ -5,9 +5,9 @@
 # Constellation
 
 <p align="center">
-  <a href="https://www.nuget.org/packages/Constellation"><img src="https://img.shields.io/nuget/v/Constellation.svg" alt="NuGet Version"></a>
-  <a href="https://www.nuget.org/packages/Constellation"><img src="https://img.shields.io/nuget/dt/Constellation.svg" alt="NuGet Downloads"></a>
-  <a href="https://github.com/jchristn/constellation/blob/main/LICENSE"><img src="https://img.shields.io/github/license/jchristn/constellation" alt="License"></a>
+  Constellation.Controller | <a href="https://www.nuget.org/packages/Constellation.Controller"><img src="https://img.shields.io/nuget/v/Constellation.Controller.svg" alt="NuGet Version"></a> | <a href="https://www.nuget.org/packages/Constellation.Controller"><img src="https://img.shields.io/nuget/dt/Constellation.Controller.svg" alt="NuGet Downloads"></a> | <a href="https://github.com/jchristn/constellation/blob/main/LICENSE"><img src="https://img.shields.io/github/license/jchristn/constellation" alt="License"></a><br />
+  
+  Constellation.Worker | <a href="https://www.nuget.org/packages/Constellation.Worker"><img src="https://img.shields.io/nuget/v/Constellation.Worker.svg" alt="NuGet Version"></a> | <a href="https://www.nuget.org/packages/Constellation.Worker"><img src="https://img.shields.io/nuget/dt/Constellation.Worker.svg" alt="NuGet Downloads"></a> | <a href="https://github.com/jchristn/constellation/blob/main/LICENSE"><img src="https://img.shields.io/github/license/jchristn/constellation" alt="License"></a>
 </p>
 
 **RESTful workload placement and virtualization for exactly-one resource ownership patterns**
@@ -26,8 +26,7 @@ Constellation solves this fundamental distributed systems challenge by providing
 - **Media Processing**: Prevent duplicate processing of video files during transcoding
 - **IoT Device Management**: Maintain single WebSocket connections per device across your fleet
 - **Blockchain Wallets**: Ensure exclusive access to wallet files to prevent double-spending
-- **Legacy Applications**: Make single-instance desktop applications scalable
-- **Hardware Access**: Scale services that need exclusive access to USB/serial devices
+- **Hardware Access**: Scale services that need exclusive access to USB/serial or other hardware devices
 
 ## How It Works
 
@@ -45,7 +44,6 @@ The raw URL (without query parameters) becomes the resource key for pinning. For
 - `/databases/users.db` - All requests to this exact path go to the same worker
 - `/databases/orders.db` - May go to a different worker
 - `/games/world-123` and `/games/world-456` - May be on same or different workers
-- `/games/world-123/players` - Will go to the same worker as `/games/world-123`
 
 ## Installation
 
@@ -355,8 +353,8 @@ curl -X POST http://localhost:8000/db/orders \
 
 The official Docker image for the controller is available at: [`jchristn/constellation`](https://hub.docker.com/r/jchristn/constellation).  Refer to the `docker` directory for assets useful for running in Docker and Docker Compose.  
 
-For Windows: `run.bat v1.0.0` or `docker compose -f compose.yaml up`
-For Linux/macOS: `./run.sh v1.0.0` or `docker compose -f compose.yaml up`
+- For Windows: `run.bat v1.0.0` or `docker compose -f compose.yaml up`
+- For Linux/macOS: `./run.sh v1.0.0` or `docker compose -f compose.yaml up`
 
 ## Configuration
 
@@ -389,7 +387,7 @@ var settings = new Settings
 };
 ```
 
-### Health Check Timing
+### Health Check
 
 Workers are considered unhealthy when they fail to respond to heartbeats for:
 **IntervalMs × MaxFailures** milliseconds
@@ -411,7 +409,6 @@ Good patterns for databases:
 Good patterns for game servers:
 /games/world-123        -> All operations for world-123 on same worker
 /games/world-456        -> May be on different worker
-/games/world-123/state  -> Same worker as /games/world-123
 
 Good patterns for ML models:
 /models/customer-abc/sentiment   -> All requests for this model on same worker
