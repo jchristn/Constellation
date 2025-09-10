@@ -216,16 +216,36 @@
             if (OnRequestReceived == null) throw new NotImplementedException("The request handler has not been implemented.");
             byte[] data = (e.Data != null ? e.Data.ToArray() : new byte[0]);
             string json = Encoding.UTF8.GetString(data);
+            
             WebsocketMessage request = _Serializer.DeserializeJson<WebsocketMessage>(json);
-            _Logging.Debug(_Header + "received message of type " + request.Type + " (" + data.Length + " bytes)");
-            WebsocketMessage response = await OnRequestReceived(request);
-            if (response != null)
+            WebsocketMessage response = null;
+
+            if (request.Type == WebsocketMessageTypeEnum.Heartbeat)
             {
-                response.GUID = request.GUID;
-                json = _Serializer.SerializeJson(response, false);
-                data = Encoding.UTF8.GetBytes(json);
-                await _Websocket.SendAsync(data, WebSocketMessageType.Binary, _TokenSource.Token).ConfigureAwait(false);
+                _Logging.Debug(_Header + "heartbeat received");
+
+                response = new WebsocketMessage
+                {
+                    GUID = request.GUID,
+                    Type = WebsocketMessageTypeEnum.Heartbeat
+                };
             }
+            else
+            {
+                _Logging.Debug(_Header + "received message type " + request.Type + " (" + data.Length + " bytes)");
+                response = await OnRequestReceived(request);
+                if (response == null)
+                {
+                    _Logging.Warn(_Header + "no response message received from message handler");
+                    return;
+                }
+                
+                response.GUID = request.GUID;
+            }
+
+            json = _Serializer.SerializeJson(response, false);
+            data = Encoding.UTF8.GetBytes(json);
+            await _Websocket.SendAsync(data, WebSocketMessageType.Binary, _TokenSource.Token).ConfigureAwait(false);
         }
 
         private async Task MaintainConnection()

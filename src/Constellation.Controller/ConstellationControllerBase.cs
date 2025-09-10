@@ -379,6 +379,9 @@
                     byte[] data = (e.Data != null ? e.Data.ToArray() : new byte[0]);
                     string json = Encoding.UTF8.GetString(data);
                     WebsocketMessage msg = _Serializer.DeserializeJson<WebsocketMessage>(json);
+
+                    if (msg.Type == WebsocketMessageTypeEnum.Heartbeat) return; // do nothing
+
                     _Logging.Debug(_Header + "received message of type " + msg.Type + " from worker " + worker.GUID + " (" + data.Length + " bytes)");
                     if (msg.Type.Equals(WebsocketMessageTypeEnum.Response)) _ResponseService.AddResponse(msg);
                 }
