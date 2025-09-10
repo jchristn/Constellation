@@ -255,6 +255,14 @@
                     else
                     {
                         _Logging.Debug(_Header + "worker is not connected, attempting reconnection");
+                        
+                        // Dispose old websocket and create new one for reconnection
+                        _Websocket?.Dispose();
+                        _Websocket = new WatsonWsClient(_ServerHostname, _ServerPort, _ServerSsl, _GUID);
+                        _Websocket.ServerConnected += ServerConnected;
+                        _Websocket.ServerDisconnected += ServerDisconnected;
+                        _Websocket.MessageReceived += ServerMessageReceived;
+                        
                         await _Websocket.StartAsync();
                     }
 

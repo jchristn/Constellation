@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Code/Constellation/**)",
+      "Bash(dotnet --version)",
+      "Bash(dotnet build:*)",
+      "Bash(dotnet test:*)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:github.com)",
+      "WebSearch"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
