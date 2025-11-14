@@ -27,6 +27,20 @@
             }
         }
 
+        /// <summary>
+        /// List of resource maps.  
+        /// </summary>
+        public Dictionary<Guid, List<string>> ResourceMap
+        {
+            get
+            {
+                lock (_ResourceMapLock)
+                {
+                    return new Dictionary<Guid, List<string>>(_ResourceMap);
+                }
+            }
+        }
+
         private string _Header = "[WorkerService] ";
         private Settings _Settings = null;
         private LoggingModule _Logging = null;
@@ -34,8 +48,7 @@
         private readonly object _WorkersLock = new object();
         private int _LastIndex = 0;
 
-        // Resource to Worker mapping
-        private Dictionary<string, Guid> _ResourceToWorkerMap = new Dictionary<string, Guid>();
+        private Dictionary<Guid, List<string>> _ResourceMap = new Dictionary<Guid, List<string>>();
         private readonly object _ResourceMapLock = new object();
 
         /// <summary>
@@ -62,24 +75,39 @@
             lock (_ResourceMapLock)
             {
                 // Check if resource is already mapped to a worker
-                if (_ResourceToWorkerMap.ContainsKey(resource))
+                Guid? existingWorkerGuid = null;
+                foreach (KeyValuePair<Guid, List<string>> kvp in _ResourceMap)
                 {
-                    Guid workerGuid = _ResourceToWorkerMap[resource];
+                    if (kvp.Value.Contains(resource))
+                    {
+                        existingWorkerGuid = kvp.Key;
+                        break;
+                    }
+                }
 
+                if (existingWorkerGuid.HasValue)
+                {
                     // Check if the mapped worker is still available
                     lock (_WorkersLock)
                     {
-                        var worker = _Workers.FirstOrDefault(w => w.GUID == workerGuid);
+                        WorkerMetadata worker = _Workers.FirstOrDefault(w => w.GUID == existingWorkerGuid.Value);
                         if (worker != null && worker.Healthy)
                         {
-                            _Logging.Debug(_Header + $"resource '{resource}' mapped to existing worker {workerGuid}");
+                            _Logging.Debug(_Header + $"resource '{resource}' mapped to existing worker {existingWorkerGuid.Value}");
                             return worker;
                         }
                         else
                         {
                             // Worker is no longer available, remove mapping
-                            _ResourceToWorkerMap.Remove(resource);
-                            _Logging.Info(_Header + $"previous worker {workerGuid} for resource '{resource}' is no longer available");
+                            if (_ResourceMap.ContainsKey(existingWorkerGuid.Value))
+                            {
+                                _ResourceMap[existingWorkerGuid.Value].Remove(resource);
+                                if (_ResourceMap[existingWorkerGuid.Value].Count == 0)
+                                {
+                                    _ResourceMap.Remove(existingWorkerGuid.Value);
+                                }
+                            }
+                            _Logging.Info(_Header + $"previous worker {existingWorkerGuid.Value} for resource '{resource}' is no longer available");
                         }
                     }
                 }
@@ -105,7 +133,7 @@
                             _LastIndex = 0;
                         }
 
-                        var candidate = _Workers[_LastIndex];
+                        WorkerMetadata candidate = _Workers[_LastIndex];
                         if (candidate.Healthy)
                         {
                             selectedWorker = candidate;
@@ -121,7 +149,11 @@
                     }
 
                     // Map the resource to this worker
-                    _ResourceToWorkerMap[resource] = selectedWorker.GUID;
+                    if (!_ResourceMap.ContainsKey(selectedWorker.GUID))
+                    {
+                        _ResourceMap[selectedWorker.GUID] = new List<string>();
+                    }
+                    _ResourceMap[selectedWorker.GUID].Add(resource);
                     _Logging.Info(_Header + $"Resource '{resource}' newly mapped to worker {selectedWorker.GUID}");
 
                     return selectedWorker;
@@ -177,32 +209,16 @@
                     // Clean up any resource mappings for this worker
                     lock (_ResourceMapLock)
                     {
-                        var resourcesToRemove = _ResourceToWorkerMap
-                            .Where(kvp => kvp.Value == guid)
-                            .Select(kvp => kvp.Key)
-                            .ToList();
-
-                        foreach (var resource in resourcesToRemove)
+                        if (_ResourceMap.ContainsKey(guid))
                         {
-                            _ResourceToWorkerMap.Remove(resource);
-                            _Logging.Debug(_Header + $"removed resource mapping for '{resource}' due to worker removal");
+                            int resourceCount = _ResourceMap[guid].Count;
+                            _ResourceMap.Remove(guid);
+                            _Logging.Debug(_Header + $"removed {resourceCount} resource mapping(s) for worker {guid} due to worker removal");
                         }
                     }
                 }
 
                 return removed;
-            }
-        }
-
-        /// <summary>
-        /// Retrieve resource mappings.
-        /// </summary>
-        /// <returns>Dictionary where the key is the resource and the value is the GUID of the worker.</returns>
-        public Dictionary<string, Guid> GetResourceMappings()
-        {
-            lock (_ResourceMapLock)
-            {
-                return new Dictionary<string, Guid>(_ResourceToWorkerMap);
             }
         }
 
@@ -216,9 +232,20 @@
 
             lock (_ResourceMapLock)
             {
-                if (_ResourceToWorkerMap.Remove(resource))
+                foreach (KeyValuePair<Guid, List<string>> kvp in _ResourceMap)
                 {
-                    _Logging.Info(_Header + $"cleared resource mapping for '{resource}'");
+                    if (kvp.Value.Remove(resource))
+                    {
+                        _Logging.Info(_Header + $"cleared resource mapping for '{resource}' from worker {kvp.Key}");
+
+                        // Remove the worker entry if it has no more resources
+                        if (kvp.Value.Count == 0)
+                        {
+                            _ResourceMap.Remove(kvp.Key);
+                        }
+
+                        return;
+                    }
                 }
             }
         }

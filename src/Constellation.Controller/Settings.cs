@@ -55,11 +55,21 @@
             set => _Logging = value ?? throw new ArgumentNullException(nameof(Logging));
         }
 
+        /// <summary>
+        /// Admin settings.
+        /// </summary>
+        public AdminSettings Admin
+        {
+            get => _Admin;
+            set => _Admin = (value != null ? value : throw new ArgumentNullException(nameof(Admin)));
+        }
+
         private WebserverSettings _Webserver = new WebserverSettings();
         private WebsocketSettings _Websocket = new WebsocketSettings();
         private HeartbeatSettings _Heartbeat = new HeartbeatSettings();
         private ProxySettings _Proxy = new ProxySettings();
         private LoggingSettings _Logging = new LoggingSettings();
+        private AdminSettings _Admin = new AdminSettings();
 
         /// <summary>
         /// Settings.

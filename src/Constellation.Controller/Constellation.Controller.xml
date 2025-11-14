@@ -4,6 +4,26 @@
         <name>Constellation.Controller</name>
     </assembly>
     <members>
+        <member name="T:Constellation.Controller.AdminSettings">
+            <summary>
+            Admin settings.
+            </summary>
+        </member>
+        <member name="P:Constellation.Controller.AdminSettings.ApiKeyHeader">
+            <summary>
+            API key header.
+            </summary>
+        </member>
+        <member name="P:Constellation.Controller.AdminSettings.ApiKeys">
+            <summary>
+            API key.
+            </summary>
+        </member>
+        <member name="M:Constellation.Controller.AdminSettings.#ctor">
+            <summary>
+            Admin settings.
+            </summary>
+        </member>
         <member name="T:Constellation.Controller.ConstellationControllerBase">
             <summary>
             Constellation controller base class.
@@ -188,6 +208,11 @@
             Logging settings.
             </summary>
         </member>
+        <member name="P:Constellation.Controller.Settings.Admin">
+            <summary>
+            Admin settings.
+            </summary>
+        </member>
         <member name="M:Constellation.Controller.Settings.#ctor">
             <summary>
             Settings.
@@ -233,6 +258,12 @@
             Cancellation token source.
             </summary>
         </member>
+        <member name="M:Constellation.Controller.WorkerMetadata.#ctor">
+            <summary>
+            Worker metadata.
+            Parameterless constructor for JSON deserialization.
+            </summary>
+        </member>
         <member name="M:Constellation.Controller.WorkerMetadata.#ctor(Constellation.Controller.Settings,WatsonWebsocket.WatsonWsServer,SyslogLogging.LoggingModule,System.Guid,System.String,System.Int32,System.Threading.CancellationTokenSource)">
             <summary>
             Worker metadata.
@@ -253,6 +284,11 @@
         <member name="P:Constellation.Controller.WorkerService.Workers">
             <summary>
             List of workers.
+            </summary>
+        </member>
+        <member name="P:Constellation.Controller.WorkerService.ResourceMap">
+            <summary>
+            List of resource maps.  
             </summary>
         </member>
         <member name="M:Constellation.Controller.WorkerService.#ctor(Constellation.Controller.Settings,SyslogLogging.LoggingModule)">
@@ -289,12 +325,6 @@
             </summary>
             <param name="guid">GUID.</param>
             <returns>True if removed.</returns>
-        </member>
-        <member name="M:Constellation.Controller.WorkerService.GetResourceMappings">
-            <summary>
-            Retrieve resource mappings.
-            </summary>
-            <returns>Dictionary where the key is the resource and the value is the GUID of the worker.</returns>
         </member>
         <member name="M:Constellation.Controller.WorkerService.ClearResourceMapping(System.String)">
             <summary>

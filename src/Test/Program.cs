@@ -25,6 +25,8 @@
         private static Serializer _Serializer = new Serializer();
         private static int _TestsPassed = 0;
         private static int _TestsFailed = 0;
+        private static List<TestResult> _TestResults = new List<TestResult>();
+        private static int _CurrentTestStartAssertions = 0;
 
         public static async Task Main(string[] args)
         {
@@ -39,6 +41,12 @@
             await RunTest("Test 6: Worker Recovery and Resource Persistence", TestWorkerRecoveryResourcePersistence);
             await RunTest("Test 7: Concurrent Requests to Same Resource", TestConcurrentRequestsSameResource);
             await RunTest("Test 8: Load Distribution Across Workers", TestLoadDistributionAcrossWorkers);
+            await RunTest("Test 9: Admin API - Workers Endpoint with Valid Key", TestAdminApiWorkersWithValidKey);
+            await RunTest("Test 10: Admin API - Workers Endpoint with Invalid Key", TestAdminApiWorkersWithInvalidKey);
+            await RunTest("Test 11: Admin API - Workers Endpoint without Key", TestAdminApiWorkersWithoutKey);
+            await RunTest("Test 12: Admin API - Maps Endpoint with Valid Key", TestAdminApiMapsWithValidKey);
+            await RunTest("Test 13: Admin API - Maps Endpoint with Invalid Key", TestAdminApiMapsWithInvalidKey);
+            await RunTest("Test 14: Admin API - Maps Endpoint without Key", TestAdminApiMapsWithoutKey);
 
             // Print Summary
             PrintTestSummary();
@@ -51,16 +59,36 @@
         {
             Console.WriteLine($"\n--- {testName} ---");
 
+            int startPassedCount = _TestsPassed;
+            int startFailedCount = _TestsFailed;
+            _CurrentTestStartAssertions = _TestsPassed + _TestsFailed;
+            bool testPassed = false;
+            string errorMessage = null;
+
             try
             {
                 await testFunc();
                 await Task.Delay(2000); // Clean delay between tests
+
+                // Test passes if no new failures occurred
+                testPassed = (_TestsFailed == startFailedCount);
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"  Test failed with exception: {ex.Message}");
                 _TestsFailed++;
+                testPassed = false;
+                errorMessage = ex.Message;
             }
+
+            _TestResults.Add(new TestResult
+            {
+                Name = testName,
+                Passed = testPassed,
+                ErrorMessage = errorMessage,
+                AssertionsPassed = _TestsPassed - startPassedCount,
+                AssertionsFailed = _TestsFailed - startFailedCount
+            });
         }
 
         private static async Task<TestController> CreateController()
@@ -678,6 +706,212 @@
             }
         }
 
+        private static async Task TestAdminApiWorkersWithValidKey()
+        {
+            using (TestController controller = await CreateController())
+            {
+                List<TestWorker> workers = new List<TestWorker>();
+                List<CancellationTokenSource> workerTokens = new List<CancellationTokenSource>();
+
+                try
+                {
+                    // Start 2 workers
+                    for (int i = 1; i <= 2; i++)
+                    {
+                        CancellationTokenSource workerToken = new CancellationTokenSource();
+                        workerTokens.Add(workerToken);
+                        TestWorker worker = new TestWorker(controller.Logging, "localhost", 8001, false, i, workerToken);
+                        workers.Add(worker);
+                        await worker.Start();
+                        await Task.Delay(1000);
+                    }
+
+                    await Task.Delay(1000);
+                    AssertEquals("Worker count", 2, controller.Workers.Count);
+
+                    // Test with valid API key
+                    using (RestRequest req = new RestRequest("http://localhost:8000/workers", HttpMethod.Get))
+                    {
+                        req.Headers.Add("x-api-key", "constellationadmin");
+                        using (RestResponse resp = await req.SendAsync())
+                        {
+                            AssertEquals("Status Code with valid key", 200, (int)resp.StatusCode);
+                            AssertContains("Content-Type", "application/json", resp.ContentType);
+
+                            List<WorkerMetadata> workerList = _Serializer.DeserializeJson<List<WorkerMetadata>>(resp.DataAsString);
+                            AssertEquals("Worker count in response", 2, workerList.Count);
+                            Console.WriteLine($"  Retrieved {workerList.Count} workers via admin API");
+                        }
+                    }
+                }
+                finally
+                {
+                    for (int i = 0; i < workers.Count; i++)
+                    {
+                        try
+                        {
+                            workerTokens[i]?.Cancel();
+                            workers[i]?.Dispose();
+                        }
+                        catch { }
+                    }
+
+                    foreach (CancellationTokenSource token in workerTokens)
+                    {
+                        token?.Dispose();
+                    }
+                }
+            }
+        }
+
+        private static async Task TestAdminApiWorkersWithInvalidKey()
+        {
+            using (TestController controller = await CreateController())
+            {
+                // Test with invalid API key
+                using (RestRequest req = new RestRequest("http://localhost:8000/workers", HttpMethod.Get))
+                {
+                    req.Headers.Add("x-api-key", "invalid-key-12345");
+                    using (RestResponse resp = await req.SendAsync())
+                    {
+                        // Should return 401 Unauthorized
+                        AssertEquals("Status Code with invalid key", 401, (int)resp.StatusCode);
+                        AssertContains("Response Body", "Authorization", resp.DataAsString);
+                    }
+                }
+            }
+        }
+
+        private static async Task TestAdminApiWorkersWithoutKey()
+        {
+            using (TestController controller = await CreateController())
+            {
+                // Test without API key - should be treated as normal proxy request
+                using (RestRequest req = new RestRequest("http://localhost:8000/workers", HttpMethod.Get))
+                {
+                    using (RestResponse resp = await req.SendAsync())
+                    {
+                        // Should return 502 because no workers are available
+                        AssertEquals("Status Code without key (no workers)", 502, (int)resp.StatusCode);
+                        AssertContains("Response Body", "No workers available", resp.DataAsString);
+                    }
+                }
+            }
+        }
+
+        private static async Task TestAdminApiMapsWithValidKey()
+        {
+            using (TestController controller = await CreateController())
+            {
+                List<TestWorker> workers = new List<TestWorker>();
+                List<CancellationTokenSource> workerTokens = new List<CancellationTokenSource>();
+
+                try
+                {
+                    // Start 2 workers
+                    for (int i = 1; i <= 2; i++)
+                    {
+                        CancellationTokenSource workerToken = new CancellationTokenSource();
+                        workerTokens.Add(workerToken);
+                        TestWorker worker = new TestWorker(controller.Logging, "localhost", 8001, false, i, workerToken);
+                        workers.Add(worker);
+                        await worker.Start();
+                        await Task.Delay(1000);
+                    }
+
+                    await Task.Delay(1000);
+
+                    // Create some resource mappings
+                    string[] resources = { "/api/users", "/api/products", "/api/orders" };
+                    foreach (string resource in resources)
+                    {
+                        using (RestRequest req = new RestRequest($"http://localhost:8000{resource}", HttpMethod.Get))
+                        {
+                            using (RestResponse resp = await req.SendAsync())
+                            {
+                                AssertEquals($"Resource {resource} mapped", 200, (int)resp.StatusCode);
+                            }
+                        }
+                    }
+
+                    // Test /maps endpoint with valid API key
+                    using (RestRequest req = new RestRequest("http://localhost:8000/maps", HttpMethod.Get))
+                    {
+                        req.Headers.Add("x-api-key", "constellationadmin");
+                        using (RestResponse resp = await req.SendAsync())
+                        {
+                            AssertEquals("Status Code with valid key", 200, (int)resp.StatusCode);
+                            AssertContains("Content-Type", "application/json", resp.ContentType);
+
+                            Dictionary<Guid, List<string>> resourceMap = _Serializer.DeserializeJson<Dictionary<Guid, List<string>>>(resp.DataAsString);
+                            AssertTrue("Resource map not empty", resourceMap.Count > 0);
+
+                            int totalResources = 0;
+                            foreach (KeyValuePair<Guid, List<string>> kvp in resourceMap)
+                            {
+                                totalResources += kvp.Value.Count;
+                                Console.WriteLine($"  Worker {kvp.Key}: {kvp.Value.Count} resource(s)");
+                            }
+
+                            AssertEquals("Total resources mapped", 3, totalResources);
+                        }
+                    }
+                }
+                finally
+                {
+                    for (int i = 0; i < workers.Count; i++)
+                    {
+                        try
+                        {
+                            workerTokens[i]?.Cancel();
+                            workers[i]?.Dispose();
+                        }
+                        catch { }
+                    }
+
+                    foreach (CancellationTokenSource token in workerTokens)
+                    {
+                        token?.Dispose();
+                    }
+                }
+            }
+        }
+
+        private static async Task TestAdminApiMapsWithInvalidKey()
+        {
+            using (TestController controller = await CreateController())
+            {
+                // Test with invalid API key
+                using (RestRequest req = new RestRequest("http://localhost:8000/maps", HttpMethod.Get))
+                {
+                    req.Headers.Add("x-api-key", "wrong-api-key-999");
+                    using (RestResponse resp = await req.SendAsync())
+                    {
+                        // Should return 401 Unauthorized
+                        AssertEquals("Status Code with invalid key", 401, (int)resp.StatusCode);
+                        AssertContains("Response Body", "Authorization", resp.DataAsString);
+                    }
+                }
+            }
+        }
+
+        private static async Task TestAdminApiMapsWithoutKey()
+        {
+            using (TestController controller = await CreateController())
+            {
+                // Test without API key - should be treated as normal proxy request
+                using (RestRequest req = new RestRequest("http://localhost:8000/maps", HttpMethod.Get))
+                {
+                    using (RestResponse resp = await req.SendAsync())
+                    {
+                        // Should return 502 because no workers are available
+                        AssertEquals("Status Code without key (no workers)", 502, (int)resp.StatusCode);
+                        AssertContains("Response Body", "No workers available", resp.DataAsString);
+                    }
+                }
+            }
+        }
+
         private static void AssertEquals<T>(string name, T expected, T actual)
         {
             if (EqualityComparer<T>.Default.Equals(expected, actual))
@@ -736,20 +970,67 @@
 
         private static void PrintTestSummary()
         {
-            Console.WriteLine("\n=== Test Summary ===");
-            Console.WriteLine($"Total Tests: {_TestsPassed + _TestsFailed}");
-            Console.WriteLine($"Passed: {_TestsPassed}");
-            Console.WriteLine($"Failed: {_TestsFailed}");
+            Console.WriteLine("\n" + new string('=', 80));
+            Console.WriteLine("=== TEST SUMMARY ===");
+            Console.WriteLine(new string('=', 80));
 
-            if (_TestsFailed == 0)
+            int testNumber = 1;
+            int testsPassedCount = 0;
+            int testsFailedCount = 0;
+
+            foreach (TestResult result in _TestResults)
             {
-                Console.WriteLine("\n✓ All tests passed!");
+                string status = result.Passed ? "PASS" : "FAIL";
+                string statusSymbol = result.Passed ? "✓" : "✗";
+
+                Console.WriteLine($"{statusSymbol} Test {testNumber}: {result.Name} - {status}");
+
+                if (!result.Passed && result.ErrorMessage != null)
+                {
+                    Console.WriteLine($"    Error: {result.ErrorMessage}");
+                }
+
+                if (result.AssertionsFailed > 0)
+                {
+                    Console.WriteLine($"    Assertions: {result.AssertionsPassed} passed, {result.AssertionsFailed} failed");
+                }
+
+                if (result.Passed)
+                    testsPassedCount++;
+                else
+                    testsFailedCount++;
+
+                testNumber++;
+            }
+
+            Console.WriteLine(new string('-', 80));
+            Console.WriteLine($"Total Tests: {_TestResults.Count}");
+            Console.WriteLine($"Tests Passed: {testsPassedCount}");
+            Console.WriteLine($"Tests Failed: {testsFailedCount}");
+            Console.WriteLine($"Total Assertions: {_TestsPassed + _TestsFailed} ({_TestsPassed} passed, {_TestsFailed} failed)");
+            Console.WriteLine(new string('=', 80));
+
+            if (testsFailedCount == 0)
+            {
+                Console.WriteLine("OVERALL RESULT: PASS ✓");
             }
             else
             {
-                Console.WriteLine($"\n✗ {_TestsFailed} tests failed!");
+                Console.WriteLine("OVERALL RESULT: FAIL ✗");
             }
+
+            Console.WriteLine(new string('=', 80));
         }
+    }
+
+    // Test Result
+    public class TestResult
+    {
+        public string Name { get; set; }
+        public bool Passed { get; set; }
+        public string ErrorMessage { get; set; }
+        public int AssertionsPassed { get; set; }
+        public int AssertionsFailed { get; set; }
     }
 
     // Test Controller

@@ -62,6 +62,14 @@
 
         /// <summary>
         /// Worker metadata.
+        /// Parameterless constructor for JSON deserialization.
+        /// </summary>
+        public WorkerMetadata()
+        {
+        }
+
+        /// <summary>
+        /// Worker metadata.
         /// </summary>
         /// <param name="settings">Settings.</param>
         /// <param name="server">Server.</param>

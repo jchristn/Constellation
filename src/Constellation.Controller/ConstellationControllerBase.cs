@@ -182,6 +182,46 @@
 
                 #endregion
 
+                #region Administrative-APIs
+
+                if (ctx.Request.HeaderExists(_Settings.Admin.ApiKeyHeader))
+                {
+                    if (_Settings.Admin.ApiKeys.Contains(ctx.Request.Headers[_Settings.Admin.ApiKeyHeader]))
+                    {
+                        _Logging.Debug(_Header + $"admin API key in use from {ctx.Request.Source.IpAddress}");
+
+                        if (ctx.Request.Method.Equals(HttpMethod.GET))
+                        {
+                            if (ctx.Request.Url.RawWithoutQuery.Equals("/workers"))
+                            {
+                                _Logging.Debug(_Header + $"worker list retrieved from {ctx.Request.Source.IpAddress}");
+                                ctx.Response.StatusCode = 200;
+                                ctx.Response.ContentType = Constants.JsonContentType;
+                                await ctx.Response.Send(_Serializer.SerializeJson(_WorkerService.Workers, true));
+                                return;
+                            }
+                            else if (ctx.Request.Url.RawWithoutQuery.Equals("/maps"))
+                            {
+                                _Logging.Debug(_Header + $"maps retrieved from {ctx.Request.Source.IpAddress}");
+                                ctx.Response.StatusCode = 200;
+                                ctx.Response.ContentType = Constants.JsonContentType;
+                                await ctx.Response.Send(_Serializer.SerializeJson(_WorkerService.ResourceMap, true));
+                                return;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        _Logging.Warn(_Header + $"invalid API key used from {ctx.Request.Source.IpAddress}");
+                        ctx.Response.StatusCode = 401;
+                        ctx.Response.ContentType = Constants.JsonContentType;
+                        await ctx.Response.Send(_Serializer.SerializeJson(new ApiErrorResponse(ApiErrorEnum.AuthorizationFailed), true));
+                        return;
+                    }
+                }
+
+                #endregion
+
                 #region Find-Worker
 
                 // Use the full raw URL (without query) as the resource identifier for pinning
