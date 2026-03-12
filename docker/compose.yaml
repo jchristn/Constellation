@@ -1,19 +1,34 @@
 services:
 
   #
-  # SharpAI
-  # See https://hub.docker.com/r/jchristn/constellation
+  # Constellation Controller
+  # See https://hub.docker.com/r/jchristn77/constellation
   # and https://github.com/jchristn/constellation
   #
 
-  sharpai:
-    container_name: 'constellation'
-    image: 'jchristn/constellation:v1.0.0'
+  controller:
+    container_name: 'constellation-controller'
+    image: 'jchristn77/constellation:v1.0.5'
     network_mode: 'host'
     stdin_open: true
     tty: true
     volumes:
-      - ./sharpai.json:/app/constellation.json
+      - ./constellation.json:/app/constellation.json
       - ./logs/:/app/logs/
     healthcheck:
       test: curl --fail http://localhost:8000
+
+  #
+  # Constellation Dashboard
+  #
+
+  dashboard:
+    container_name: 'constellation-dashboard'
+    build:
+      context: ../dashboard
+      dockerfile: Dockerfile
+    ports:
+      - '8080:8080'
+    depends_on:
+      controller:
+        condition: service_healthy

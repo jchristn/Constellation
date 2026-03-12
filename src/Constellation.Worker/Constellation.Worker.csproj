@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>net8.0</TargetFramework>
-		<Version>1.0.5</Version>
+		<TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+		<Version>1.0.6</Version>
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
 		<DocumentationFile>Constellation.Worker.xml</DocumentationFile>
 		<ApplicationIcon>logo.ico</ApplicationIcon>
@@ -10,7 +10,7 @@
 		<Title>Constellation Worker</Title>
 		<Authors>Joel Christner</Authors>
 		<Description>Constellation is RESTful workload placement and virtualization for exactly-one resource ownership patterns.  Constellation.Worker is the base class for worker nodes.</Description>
-		<Copyright>(c)2025 Joel Christner</Copyright>
+		<Copyright>(c)2026 Joel Christner</Copyright>
 		<PackageProjectUrl>https://github.com/jchristn/constellation</PackageProjectUrl>
 		<PackageIcon>logo.png</PackageIcon>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
@@ -43,8 +43,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="SyslogLogging" Version="2.0.8" />
-		<PackageReference Include="WatsonWebsocket" Version="4.1.6" />
+		<PackageReference Include="SyslogLogging" Version="2.0.13" />
+		<PackageReference Include="WatsonWebsocket" Version="4.1.8" />
 	</ItemGroup>
 
 	<ItemGroup>

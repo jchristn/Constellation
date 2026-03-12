@@ -20,7 +20,7 @@ docker run ^
   -e "TERM=xterm-256color" ^
   -v .\constellation.json:/app/constellation.json ^
   -v .\logs\:/app/logs/ ^
-  jchristn/constellation:%1
+  jchristn77/constellation:%1
 
 GOTO :Done
 

@@ -1,0 +1,43 @@
+.copyable-id {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.copyable-id-value {
+  white-space: nowrap;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+  font-size: 13px;
+}
+
+.copyable-id-empty {
+  color: var(--text-faint);
+}
+
+.copyable-id-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  padding: 2px;
+  border-radius: 3px;
+  cursor: pointer;
+  color: var(--text-faint);
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.copyable-id-btn:hover {
+  background: var(--bg-surface-hover);
+  color: var(--text-body);
+}
+
+.copyable-id-btn.copied {
+  color: #10b981;
+}
+
+.copyable-id-btn.copied:hover {
+  color: #10b981;
+  background: #d1fae5;
+}

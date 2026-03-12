@@ -1,0 +1,143 @@
+.topbar {
+  display: flex;
+  align-items: center;
+  padding: 8px 24px;
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-color);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  gap: 1rem;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.topbar-logo {
+  height: 28px;
+  width: auto;
+}
+
+.topbar-title {
+  color: var(--text-primary);
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.topbar-nav {
+  display: flex;
+  gap: 4px;
+  flex: 1;
+  overflow-x: auto;
+}
+
+.topbar-nav button {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: inherit;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.topbar-nav button:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+.topbar-nav button.active {
+  color: var(--accent);
+  background: var(--bg-hover);
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.topbar-server-url {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-secondary);
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-size: 12px;
+  max-width: 300px;
+}
+
+.topbar-server-url svg {
+  flex-shrink: 0;
+  color: #10b981;
+}
+
+.server-url-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.topbar-button {
+  padding: 6px 14px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.topbar-button:hover {
+  background: var(--bg-hover);
+  border-color: #667eea;
+}
+
+.topbar-button:active {
+  transform: scale(0.98);
+}
+
+.topbar-github {
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  transition: color 0.15s;
+}
+
+.topbar-github:hover {
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+@media (max-width: 768px) {
+  .topbar {
+    flex-wrap: wrap;
+    padding: 8px 12px;
+  }
+
+  .topbar-nav {
+    order: 3;
+    width: 100%;
+  }
+
+  .topbar-server-url {
+    display: none;
+  }
+
+  .topbar-title {
+    font-size: 16px;
+  }
+}

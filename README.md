@@ -414,12 +414,134 @@ curl -X POST http://localhost:8000/db/orders \
   -d '{"query":"SELECT datetime(\"now\")"}'
 ```
 
-## Docker Image
+## Testing with the Included Projects
 
-The official Docker image for the controller is available at: [`jchristn/constellation`](https://hub.docker.com/r/jchristn/constellation).  Refer to the `docker` directory for assets useful for running in Docker and Docker Compose.  
+The repository includes a ready-to-run controller server and a test worker that you can use to quickly verify your setup without writing any code.
 
-- For Windows: `run.bat v1.0.0` or `docker compose -f compose.yaml up`
-- For Linux/macOS: `./run.sh v1.0.0` or `docker compose -f compose.yaml up`
+### Step 1: Start the Controller Server
+
+```bash
+cd src/Constellation.ControllerServer
+dotnet run
+```
+
+This starts the controller listening on port `8000` (HTTP) and port `8001` (WebSocket) using the default configuration in `constellation.json`.
+
+### Step 2: Start the Test Worker
+
+In a separate terminal:
+
+```bash
+cd src/Test.ConstellationWorker
+dotnet run
+```
+
+The test worker connects to the controller via WebSocket on `localhost:8001`. It logs every incoming request (method, path, content type, and body) to the console and returns a `200 OK` JSON response.
+
+You can also specify a custom hostname, port, or enable SSL:
+
+```bash
+dotnet run -- --hostname 192.168.1.100 --port 9001 --ssl
+```
+
+### Step 3: Send Requests
+
+```bash
+# Health check
+curl http://localhost:8000
+
+# Send a request (will be routed to the test worker)
+curl http://localhost:8000/my/resource
+
+# POST with a body
+curl -X POST http://localhost:8000/my/resource \
+  -H "Content-Type: application/json" \
+  -d '{"hello":"world"}'
+```
+
+You should see each request logged in the test worker's console output. You can run multiple instances of `Test.ConstellationWorker` to see round-robin resource distribution in action.
+
+## Dashboard
+
+Constellation includes a web-based dashboard for monitoring and managing your controller, workers, and resource assignments. The dashboard is a React application built with Vite.
+
+### Features
+
+- **System overview** with controller health, worker count, and resource count
+- **Workers view** with sortable/filterable table, health status, resource counts, and detail drill-down
+- **Resource map** showing which resources are pinned to which workers
+- **Connection and health settings** at a glance
+- **Light/dark theme** with automatic persistence
+- **Auto-refresh** every 10 seconds
+- **Copy-to-clipboard** for GUIDs and resource paths
+
+### Running the Dashboard
+
+**Development mode:**
+
+```bash
+cd dashboard
+npm install
+npm run dev
+```
+
+The dashboard will be available at `http://localhost:8080`. Enter your controller URL (e.g. `http://localhost:8000`) and admin API key to connect.
+
+**Production build:**
+
+```bash
+cd dashboard
+npm install
+npm run build
+```
+
+The built files will be in `dashboard/dist/` and can be served by any static file server.
+
+## Docker
+
+The official Docker image for the controller is available at: [`jchristn77/constellation`](https://hub.docker.com/r/jchristn77/constellation). Refer to the `docker` directory for assets useful for running in Docker and Docker Compose.
+
+### Controller Only
+
+```bash
+# Using the run script
+cd docker
+run.bat v1.0.5        # Windows
+./run.sh v1.0.5       # Linux/macOS
+
+# Or using Docker directly
+docker run -d \
+  --name constellation-controller \
+  --network host \
+  -v ./constellation.json:/app/constellation.json \
+  jchristn77/constellation:v1.0.5
+```
+
+### Controller + Dashboard (Docker Compose)
+
+The `docker/compose.yaml` file runs both the controller and dashboard together:
+
+```bash
+cd docker
+docker compose up -d
+```
+
+This starts:
+- **Controller** on port `8000` (HTTP) and port `8001` (WebSocket)
+- **Dashboard** on port `8080`
+
+Open `http://localhost:8080` in your browser and connect to `http://localhost:8000` with your admin API key.
+
+### Building Docker Images
+
+```bash
+# Build controller image
+build-server.bat v1.0.5
+
+# Build dashboard image
+cd dashboard
+docker build -t constellation-dashboard .
+```
 
 ## Configuration
 
@@ -530,4 +652,4 @@ Built with:
 
 ---
 
-© 2025 Joel Christner
+© 2026 Joel Christner

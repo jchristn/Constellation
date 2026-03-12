@@ -116,6 +116,15 @@
             _Controller = new Controller(_Settings, _Logging, _TokenSource);
             await _Controller.Start();
 
+            string restScheme = _Settings.Webserver.Ssl.Enable ? "https" : "http";
+            Console.WriteLine("REST server listening on " + restScheme + "://" + _Settings.Webserver.Hostname + ":" + _Settings.Webserver.Port);
+
+            string wsScheme = _Settings.Websocket.Ssl ? "wss" : "ws";
+            foreach (string hostname in _Settings.Websocket.Hostnames)
+            {
+                Console.WriteLine("Websocket server listening on " + wsScheme + "://" + hostname + ":" + _Settings.Websocket.Port);
+            }
+
             #endregion
         }
     }

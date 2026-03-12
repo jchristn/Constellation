@@ -23,5 +23,5 @@ docker run \
   -e "TERM=xterm-256color" \
   -v ./constellation.json:/app/constellation.json \
   -v ./logs/:/app/logs/ \
-  jchristn/constellation:$IMG_TAG
+  jchristn77/constellation:$IMG_TAG
 

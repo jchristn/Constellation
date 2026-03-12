@@ -17,7 +17,7 @@
             @"                 _       _ _      _   _           " + Environment.NewLine +
             @"  __ ___ _ _  __| |_ ___| | |__ _| |_(_)___ _ _   " + Environment.NewLine +
             @" / _/ _ \ ' \(_-<  _/ -_) | / _` |  _| / _ \ ' \  " + Environment.NewLine +
-            @" \__\___/_||_/__/\__\___|_|_\__,_|\__|_\___/_||_| " + Environment.NewLine;
+            @" \__\___/_||_/__/\__\___|_|_\__,_|\__|_\___/_|_| " + Environment.NewLine;
                                                  
 
         /// <summary>
@@ -52,7 +52,7 @@
         /// <summary>
         /// Copyright.
         /// </summary>
-        public static string Copyright = "(c)2025 Joel Christner";
+        public static string Copyright = "(c)2026 Joel Christner";
 
         #endregion
 
