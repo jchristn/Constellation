@@ -1,42 +1,14 @@
 @ECHO OFF
+IF "%1" == "" GOTO :Usage
 ECHO.
-ECHO Building Constellation Dashboard...
-ECHO.
+ECHO Building for linux/amd64 and linux/arm64/v8...
+docker buildx build -f dashboard/Dockerfile --platform linux/amd64,linux/arm64/v8 --tag jchristn77/constellation-dashboard:%1 --tag jchristn77/constellation-dashboard:latest --push dashboard/
 
-IF NOT EXIST dashboard (
-    ECHO ERROR: dashboard directory not found.
-    GOTO :Done
-)
+GOTO :Done
 
-cd dashboard
-
-IF NOT EXIST node_modules (
-    ECHO Installing dependencies...
-    call npm install
-    IF ERRORLEVEL 1 (
-        ECHO ERROR: npm install failed.
-        cd ..
-        GOTO :Done
-    )
-)
-
-ECHO Building production bundle...
-call npm run build
-IF ERRORLEVEL 1 (
-    ECHO ERROR: Build failed.
-    cd ..
-    GOTO :Done
-)
-
-cd ..
-
-ECHO.
-ECHO Build complete. Output is in dashboard\dist\
-ECHO.
-ECHO To run in development mode:
-ECHO   cd dashboard
-ECHO   npm run dev
-ECHO.
+:Usage
+ECHO Provide a tag argument for the build.
+ECHO Example: build-dashboard.bat v1.0.0
 
 :Done
 ECHO Done
