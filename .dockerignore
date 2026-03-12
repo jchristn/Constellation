@@ -92,3 +92,6 @@ Thumbs.db
 *.tar.gz
 *.rar
 *.7z
+
+# Dashboard (separate Dockerfile)
+dashboard/

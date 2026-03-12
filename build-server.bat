@@ -2,7 +2,7 @@
 IF "%1" == "" GOTO :Usage
 ECHO.
 ECHO Building for linux/amd64 and linux/arm64/v8...
-docker buildx build -f src/Constellation.ControllerServer/Dockerfile --platform linux/amd64,linux/arm64/v8 --tag jchristn77/constellation:%1 --tag jchristn77/constellation:latest --push src/
+docker buildx build --builder cloud-jchristn77-jchristn77 -f src/Constellation.ControllerServer/Dockerfile --platform linux/amd64,linux/arm64/v8 --tag jchristn77/constellation:%1 --tag jchristn77/constellation:latest --push src/
 
 GOTO :Done
 

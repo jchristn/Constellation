@@ -1,6 +1,7 @@
 #
 #
-# Run the docker build command from src, not from the project directory
+# Build from project root:
+#   docker buildx build --platform linux/amd64,linux/arm64/v8 --tag jchristn77/constellation:v1.0.0 --push .
 #
 #
 
@@ -13,7 +14,7 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 # Copy source
-COPY . .
+COPY src/ .
 
 # Restore dependencies
 RUN dotnet restore "Constellation.ControllerServer/Constellation.ControllerServer.csproj"

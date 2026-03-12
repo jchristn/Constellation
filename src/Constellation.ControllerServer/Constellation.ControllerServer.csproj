@@ -19,7 +19,7 @@
 		<None Update="Constellation.ControllerServer.xml">
 		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
-		<None Update="Dockerfile">
+		<None Update="..\..\Dockerfile" Link="Dockerfile">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
 	</ItemGroup>
