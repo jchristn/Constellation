@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+		<Nullable>disable</Nullable>
+		<ImplicitUsings>disable</ImplicitUsings>
+		<GenerateDocumentationFile>false</GenerateDocumentationFile>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Touchstone.Core" Version="0.1.12" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Constellation.Core\Constellation.Core.csproj" />
+		<ProjectReference Include="..\Constellation.Controller\Constellation.Controller.csproj" />
+		<ProjectReference Include="..\Constellation.Worker\Constellation.Worker.csproj" />
+	</ItemGroup>
+
+</Project>

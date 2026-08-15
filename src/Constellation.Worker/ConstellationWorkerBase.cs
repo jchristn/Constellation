@@ -122,7 +122,7 @@
         /// Dispose.
         /// </summary>
         /// <param name="disposing">Disposing.</param>
-        protected virtual async void Dispose(bool disposing)
+        protected virtual void Dispose(bool disposing)
         {
             if (!_Disposed)
             {
@@ -130,15 +130,27 @@
                 {
                     if (!_TokenSource.Token.IsCancellationRequested) _TokenSource.Cancel();
 
+                    // Wait for the connection-maintenance loop to finish.  It may not have been
+                    // started (null) and it may complete via cancellation; both are expected.
                     try
                     {
-                        await _MaintainConnection.WaitAsync(TimeSpan.FromSeconds(5));
+                        _MaintainConnection?.Wait(TimeSpan.FromSeconds(5));
                     }
-                    catch (TimeoutException)
+                    catch
                     {
                     }
 
-                    _Websocket?.Dispose();
+                    // Disposing the underlying WebSocket client can surface a TaskCanceledException
+                    // when its internal receive loop is torn down; that is expected during shutdown
+                    // and must not escape (this method previously ran as 'async void', which allowed
+                    // such exceptions to crash the host process).
+                    try
+                    {
+                        _Websocket?.Dispose();
+                    }
+                    catch
+                    {
+                    }
                 }
 
                 _Websocket = null;

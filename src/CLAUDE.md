@@ -11,9 +11,29 @@ dotnet build Constellation.sln -c Release
 ```
 
 ### Running Tests
+
+The automated test suite is built on [Touchstone](https://github.com/jchristn/Touchstone), a
+runner-agnostic test descriptor framework. All test cases are defined once in **Test.Shared**
+(the central source of truth) and executed through three interchangeable runners:
+
 ```bash
-dotnet run --project Test
-dotnet run --project Test.Sqlite
+# Touchstone CLI runner (colored tabular output, CI-friendly exit code)
+dotnet run --project Test.Automated
+# Optionally export JSON results: dotnet run --project Test.Automated results.json
+
+# xUnit adapter (per-case reporting under dotnet test)
+dotnet test Test.Xunit
+
+# NUnit adapter (per-case reporting under dotnet test)
+dotnet test Test.Nunit
+```
+
+**Test.Sqlite** and **Test.ConstellationWorker** are interactive console applications (not part
+of the automated suite); run them directly to exercise the system by hand:
+
+```bash
+dotnet run --project Test.Sqlite            # controller + SQLite workers; send curl requests
+dotnet run --project Test.ConstellationWorker   # a single interactive worker
 ```
 
 ### Building Individual Projects
@@ -83,15 +103,31 @@ Constellation.ControllerServer
 Constellation.Worker
 └── Constellation.Core
 
-Test
+Test.Shared  (central source of truth for all test cases)
+├── Touchstone.Core
+├── Constellation.Core
 ├── Constellation.Controller
-├── Constellation.Worker
-└── RestWrapper (for HTTP testing)
+└── Constellation.Worker
 
-Test.Sqlite
+Test.Automated  (Touchstone CLI runner)
+├── Touchstone.Cli
+└── Test.Shared
+
+Test.Xunit  (Touchstone xUnit adapter)
+├── Touchstone.XunitAdapter
+└── Test.Shared
+
+Test.Nunit  (Touchstone NUnit adapter)
+├── Touchstone.NunitAdapter
+└── Test.Shared
+
+Test.Sqlite  (interactive console app)
 ├── Constellation.Controller
 ├── Constellation.Worker
 └── Microsoft.Data.Sqlite
+
+Test.ConstellationWorker  (interactive console app)
+└── Constellation.Worker
 ```
 
 ### Default Configuration
@@ -104,14 +140,25 @@ Test.Sqlite
 
 ### Testing Strategy
 
-The repository includes comprehensive integration tests in the `Test` project that demonstrate:
-- Resource pinning behavior
-- Worker failover scenarios  
-- Load distribution across workers
-- Concurrent request handling
-- Worker recovery patterns
+All automated test cases live in **Test.Shared** as Touchstone descriptors and are exercised
+identically by the CLI runner (Test.Automated), xUnit (Test.Xunit), and NUnit (Test.Nunit).
+The suites cover, in both positive and negative cases:
 
-These tests create real controller and worker instances to validate the distributed system behavior.
+- **Core data models** — WebsocketMessage, UrlDetails, node types, constants, enums (defaults,
+  validation guards, null-coalescing)
+- **API errors** — ApiErrorResponse status-code/message mapping for every ApiErrorEnum value
+- **Serialization** — JSON/XML round-trips, custom converters (enum/NameValueCollection/DateTime),
+  deep-copy, and null/empty-input guards
+- **Settings** — defaults and validation on Heartbeat/Proxy/Admin/Logging/Settings
+- **Worker base class** — URL formatting, SSL, property guards
+- **Worker service (routing)** — resource pinning, round-robin, health-aware selection,
+  remapping, and resource-map cleanup
+- **Controller/worker integration** — end-to-end resource pinning, worker failover, load
+  distribution, concurrent requests, worker recovery, and the admin `/workers` and `/maps`
+  APIs (valid/invalid/absent API keys)
+
+Integration tests create real controller and worker instances over live HTTP/WebSocket sockets;
+each case runs on its own unique port pair so the suite is safe to run in parallel under any runner.
 
 ## NuGet Packages
 
