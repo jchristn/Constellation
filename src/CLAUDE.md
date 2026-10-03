@@ -52,6 +52,7 @@ dotnet run --project Constellation.ControllerServer
 ### Docker Build
 ```bash
 build-docker.bat v1.0.0    # Windows
+./build-docker.sh v1.0.0   # Linux/macOS
 ```
 
 ## Architecture Overview
@@ -98,7 +99,8 @@ Constellation is a RESTful workload placement and virtualization system designed
 Constellation.ControllerServer
 ├── Constellation.Controller
 │   └── Constellation.Core
-└── Constellation.Core
+├── Constellation.Core
+└── Radiant (telemetry host: Prometheus, OTLP, Loki)
 
 Constellation.Worker
 └── Constellation.Core
@@ -156,9 +158,29 @@ The suites cover, in both positive and negative cases:
 - **Controller/worker integration** — end-to-end resource pinning, worker failover, load
   distribution, concurrent requests, worker recovery, and the admin `/workers` and `/maps`
   APIs (valid/invalid/absent API keys)
+- **Telemetry**: metrics and spans for placement, every proxy stage, the worker hop and W3C
+  trace propagation, heartbeats and eviction, the response store, admin APIs, worker lifecycle,
+  gauges, failure paths (no worker, timeout, handler exception, malformed message), bounded
+  labels, the no-listener path, and a throwing listener. Uses `Test.Shared/TelemetryCapture.cs`
+  (in-memory `MeterListener` + `ActivityListener` subscribed by name).
 
 Integration tests create real controller and worker instances over live HTTP/WebSocket sockets;
 each case runs on its own unique port pair so the suite is safe to run in parallel under any runner.
+
+## Telemetry
+
+See `../TELEMETRY.md` for the full catalog. Rules when changing code:
+
+- All telemetry names live in `Constellation.Core/Telemetry/TelemetryConstants.cs`; instruments and helpers in
+  `ConstellationTelemetry.cs`. Libraries emit only through the BCL `Meter`/`ActivitySource` named `Constellation`;
+  only `Constellation.ControllerServer` depends on Radiant (the exporter host).
+- Every new operation gets a duration histogram plus an outcome counter, and a span with explicit status.
+- Record through the `ConstellationTelemetry.Add/Record/Start*/Set*/Stop` helpers so a failing listener can never
+  affect request handling.
+- Metric labels must be bounded: never put resource paths, GUIDs, or free-form text on metrics (spans only).
+- Spans with no explicit parent in background or socket callbacks must be started with
+  `StartActivity(name, kind, default(ActivityContext))` so they are roots.
+- Update `TELEMETRY.md`, the dashboards in `../assets/grafana/`, and `TelemetrySuite` together.
 
 ## NuGet Packages
 
@@ -167,7 +189,7 @@ This solution produces three NuGet packages:
 - `Constellation.Controller` - Controller functionality
 - `Constellation.Worker` - Worker base classes
 
-All packages target .NET 8.0 and include XML documentation.
+All packages target .NET 8.0 and .NET 10.0 and include XML documentation.
 
 ## Code Style and Implementation Rules
 

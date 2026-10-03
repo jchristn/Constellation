@@ -24,4 +24,8 @@
 		</None>
 	</ItemGroup>
 
+	<ItemGroup>
+	  <PackageReference Include="Radiant" Version="0.1.2" />
+	</ItemGroup>
+
 </Project>

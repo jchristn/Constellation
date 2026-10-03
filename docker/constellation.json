@@ -42,7 +42,9 @@
     }
   },
   "Websocket": {
-    "Hostnames": [ "*" ],
+    "Hostnames": [
+      "*"
+    ],
     "Port": 8001,
     "Ssl": false
   },
@@ -67,5 +69,22 @@
     "ConsoleLogging": true,
     "EnableColors": true,
     "MinimumSeverity": 0
+  },
+  "Telemetry": {
+    "Enable": true,
+    "ServiceName": "constellation-controller",
+    "OtlpEnable": true,
+    "OtlpEndpoint": "http://otel-collector:4317",
+    "OtlpProtocol": "grpc",
+    "PrometheusEnable": true,
+    "PrometheusHostname": "constellation-controller",
+    "PrometheusPort": 9464,
+    "LokiEnable": false,
+    "LokiEndpoint": "http://loki:3100/otlp",
+    "LokiTenantId": null,
+    "LogsMinimumSeverity": 2,
+    "TraceSamplingRatio": 1.0,
+    "MetricExportIntervalMs": 60000,
+    "IncludeRuntimeMetrics": true
   }
 }

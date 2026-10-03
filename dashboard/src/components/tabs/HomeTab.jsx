@@ -4,6 +4,15 @@ import { workerGuid, workerDisplayName, timeAgo, formatDate } from '../../utils/
 import CopyableId from '../CopyableId';
 import './TabStyles.css';
 
+// Bundled observability tools from docker/compose.yaml. URLs are the host-published ports a browser reaches;
+// credentials are local-development defaults and must be changed for any shared deployment.
+const EXTERNAL_SERVICES = [
+  { name: 'Grafana', description: 'Dashboards (Constellation folder), traces, and logs', url: 'http://localhost:3000', credentials: 'admin / admin' },
+  { name: 'Prometheus', description: 'Metrics and PromQL queries', url: 'http://localhost:9090', credentials: null },
+  { name: 'Tempo', description: 'Trace storage API (browse traces through Grafana)', url: 'http://localhost:3200', credentials: null },
+  { name: 'Loki', description: 'Structured log storage API (browse logs through Grafana)', url: 'http://localhost:3100', credentials: null },
+];
+
 const HomeTab = ({ workers, resourceList, serverHealthy, loading, onRefresh, onNavigate }) => {
   const { serverUrl } = useAuth();
   const refreshRef = useRef(null);
@@ -153,6 +162,42 @@ const HomeTab = ({ workers, resourceList, serverHealthy, loading, onRefresh, onN
           <p className="empty-hint text-dim">Workers connect to the controller via WebSocket on the configured port.</p>
         </div>
       )}
+
+      <h3 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: 4, marginTop: 24, color: 'var(--text-heading)' }}>External Services</h3>
+      <p className="text-dim" style={{ fontSize: '0.85rem', marginBottom: 8 }}>
+        Observability tools bundled with <span className="mono">docker/compose.yaml</span>. They are available only when that stack is running;
+        default credentials are for local development and must be changed for shared deployments.
+      </p>
+      <div className="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Service</th>
+              <th>URL</th>
+              <th>Credentials</th>
+            </tr>
+          </thead>
+          <tbody>
+            {EXTERNAL_SERVICES.map(svc => (
+              <tr key={svc.name}>
+                <td>
+                  <strong>{svc.name}</strong>
+                  <div className="text-dim" style={{ fontSize: '0.8rem' }}>{svc.description}</div>
+                </td>
+                <td>
+                  <CopyableId value={svc.url} className="mono" />{' '}
+                  <a href={svc.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.8rem' }}>Open &#x2197;</a>
+                </td>
+                <td>
+                  {svc.credentials
+                    ? <CopyableId value={svc.credentials} className="mono" />
+                    : <span className="text-dim">None</span>}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
       <h3 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: 4, marginTop: 24, color: 'var(--text-heading)' }}>About</h3>
       <div className="about-card">

@@ -503,6 +503,637 @@
             <param name="options">JSON serializer options.</param>
             <returns>JsonConverter.</returns>
         </member>
+        <member name="T:Constellation.Core.Telemetry.ConstellationTelemetry">
+            <summary>
+            The single <see cref="T:System.Diagnostics.Metrics.Meter"/> and <see cref="T:System.Diagnostics.ActivitySource"/>
+            through which every Constellation component emits metrics and spans.  Constellation takes no dependency on any
+            exporter: a host subscribes to <see cref="F:Constellation.Core.Telemetry.TelemetryConstants.MeterName"/> and
+            <see cref="F:Constellation.Core.Telemetry.TelemetryConstants.ActivitySourceName"/> (for example with Radiant or the OpenTelemetry SDK).  When
+            nothing is subscribed every recording is a near-free no-op and every span start returns null.
+            All recording is best-effort: a failing listener never propagates an exception into request handling.
+            Thread safety: all members are thread safe.
+            </summary>
+        </member>
+        <member name="P:Constellation.Core.Telemetry.ConstellationTelemetry.Meter">
+            <summary>
+            The Constellation meter, named <see cref="F:Constellation.Core.Telemetry.TelemetryConstants.MeterName"/>.  Never null.
+            </summary>
+        </member>
+        <member name="P:Constellation.Core.Telemetry.ConstellationTelemetry.ActivitySource">
+            <summary>
+            The Constellation activity source, named <see cref="F:Constellation.Core.Telemetry.TelemetryConstants.ActivitySourceName"/>.  Never null.
+            </summary>
+        </member>
+        <member name="P:Constellation.Core.Telemetry.ConstellationTelemetry.Version">
+            <summary>
+            The Constellation build version reported on the meter, activity source, and build-info gauge.  Never null.
+            </summary>
+        </member>
+        <member name="T:Constellation.Core.Telemetry.IControllerTelemetryState">
+            <summary>
+            Point-in-time controller state sampled by the observable gauges in <see cref="T:Constellation.Core.Telemetry.ConstellationTelemetry"/>.
+            Implementations must be thread safe and must never throw.
+            </summary>
+        </member>
+        <member name="T:Constellation.Core.Telemetry.IWorkerTelemetryState">
+            <summary>
+            Point-in-time worker state sampled by the observable gauges in <see cref="T:Constellation.Core.Telemetry.ConstellationTelemetry"/>.
+            Implementations must be thread safe and must never throw.
+            </summary>
+        </member>
+        <member name="T:Constellation.Core.Telemetry.TelemetryConstants">
+            <summary>
+            Stable telemetry names emitted by Constellation: the meter and activity source names, every
+            metric instrument name, every span name, and every metric label and span attribute key.
+            These strings are a public contract consumed by collectors and Grafana dashboards; treat a
+            rename as a breaking change.  See TELEMETRY.md for the full catalog.
+            Thread safety: all members are constants and are safe to read from any thread.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.MeterName">
+            <summary>
+            Name of the <see cref="T:System.Diagnostics.Metrics.Meter"/> that every Constellation
+            metric is recorded on.  Subscribe a collector to this name, for example
+            <c>settings.Sources.AddMeter("Constellation")</c> with Radiant.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.ActivitySourceName">
+            <summary>
+            Name of the <see cref="T:System.Diagnostics.ActivitySource"/> that every Constellation
+            span is started on.  Subscribe a collector to this name, for example
+            <c>settings.Sources.AddActivitySource("Constellation")</c> with Radiant.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.ProxyRequests">
+            <summary>
+            Counter of proxied requests by outcome and HTTP method.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.ProxyRequestDuration">
+            <summary>
+            Histogram of end-to-end proxy duration (placement through response), in seconds.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.ProxyStageDuration">
+            <summary>
+            Histogram of per-stage proxy duration, in seconds, labeled by stage and outcome.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.ProxyStageEvents">
+            <summary>
+            Counter of proxy stage executions, labeled by stage and outcome.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.ProxyActiveRequests">
+            <summary>
+            Up/down counter of proxy requests currently in flight (awaiting a worker response).
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.PlacementDecisions">
+            <summary>
+            Counter of placement (resource-to-worker) decisions, labeled by decision.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.PlacementDuration">
+            <summary>
+            Histogram of placement decision duration, in seconds, labeled by decision.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.ResourcesMapped">
+            <summary>
+            Observable gauge of pinned resources currently mapped to workers.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.Workers">
+            <summary>
+            Observable gauge of workers registered with the controller, labeled by state (healthy, unhealthy).
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.WorkerPoolEvents">
+            <summary>
+            Counter of worker pool lifecycle events (connected, disconnected, unhealthy, recovered, evicted).
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.WorkerSessionDuration">
+            <summary>
+            Histogram of worker session lifetime from registration to disconnection, in seconds.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.Heartbeats">
+            <summary>
+            Counter of heartbeats sent by the controller, labeled by outcome.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.HeartbeatDuration">
+            <summary>
+            Histogram of heartbeat send duration, in seconds, labeled by outcome.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.HeartbeatLastSuccess">
+            <summary>
+            Observable gauge of the most recent successful heartbeat, as Unix time in seconds.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.ResponsesPending">
+            <summary>
+            Observable gauge of worker responses held in the correlation store awaiting pickup.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.ResponsesReceived">
+            <summary>
+            Counter of worker responses offered to the correlation store, labeled by outcome.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.ResponsesExpired">
+            <summary>
+            Counter of orphaned responses evicted from the correlation store after expiry.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.ResponsesCleanupDuration">
+            <summary>
+            Histogram of correlation-store cleanup pass duration, in seconds, labeled by outcome.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.ResponsesCleanupLastSuccess">
+            <summary>
+            Observable gauge of the most recent successful correlation-store cleanup pass, as Unix time in seconds.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.WebsocketMessages">
+            <summary>
+            Counter of WebSocket messages, labeled by component, direction, message type, and outcome.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.WebsocketMessageSize">
+            <summary>
+            Histogram of WebSocket message size in bytes, labeled by component, direction, and message type.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.AdminRequests">
+            <summary>
+            Counter of administrative API requests, labeled by operation and outcome.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.WorkerRequests">
+            <summary>
+            Counter of requests handled by a worker, labeled by outcome.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.WorkerRequestDuration">
+            <summary>
+            Histogram of worker request handling duration (deserialize, handler, reply), in seconds, labeled by outcome.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.WorkerHandlerDuration">
+            <summary>
+            Histogram of the application's request handler duration on the worker, in seconds, labeled by outcome.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.WorkerConnectionAttempts">
+            <summary>
+            Counter of worker connection attempts to the controller, labeled by outcome.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.WorkerConnectionEvents">
+            <summary>
+            Counter of worker connection state changes (connected, disconnected), labeled by event.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.WorkerConnected">
+            <summary>
+            Observable gauge of worker instances in this process currently connected to a controller.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.Errors">
+            <summary>
+            Counter of caught errors, labeled by component, operation, and error type.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.BuildInfo">
+            <summary>
+            Observable gauge with constant value 1 carrying build information as labels (version, runtime).
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.ConfigHeartbeatInterval">
+            <summary>
+            Observable gauge of the configured heartbeat interval, in seconds.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.ConfigHeartbeatMaxFailures">
+            <summary>
+            Observable gauge of the configured maximum heartbeat failures before eviction.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.ConfigProxyTimeout">
+            <summary>
+            Observable gauge of the configured proxy timeout, in seconds.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.SpanProxy">
+            <summary>
+            Span covering one proxied request inside the Watson server span.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.SpanWorkerRequest">
+            <summary>
+            Client span covering the outbound call to a worker over WebSocket (dispatch plus wait).
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.SpanWorkerHandle">
+            <summary>
+            Worker-side server span covering the handling of one proxied request.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.SpanResponseReceive">
+            <summary>
+            Controller-side consumer span covering the receipt of one worker response.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.SpanAdminPrefix">
+            <summary>
+            Span covering an administrative API call.  The operation name is appended.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.SpanWorkerRegister">
+            <summary>
+            Span covering registration of a newly connected worker.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.SpanWorkerUnregister">
+            <summary>
+            Span covering removal of a disconnected worker.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.SpanHeartbeat">
+            <summary>
+            Span emitted for a failed or errored heartbeat.  Successful heartbeats emit metrics only.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.SpanWorkerEvict">
+            <summary>
+            Span emitted when a worker exceeds its heartbeat failure limit and is marked unhealthy.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.SpanResponsesCleanup">
+            <summary>
+            Root span covering one correlation-store cleanup pass.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.SpanWorkerConnect">
+            <summary>
+            Worker-side span covering one connection attempt to the controller.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.SpanStagePrefix">
+            <summary>
+            Prefix for stage spans, for example <c>stage:placement</c>.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.StagePlacement">
+            <summary>
+            Proxy stage: choose (or reuse) the worker that owns the resource.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.StageDispatch">
+            <summary>
+            Proxy stage: serialize the request and send it to the worker over WebSocket.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.StageAwaitResponse">
+            <summary>
+            Proxy stage: wait for the correlated worker response (the "queued" state of the proxy).
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.StageRespond">
+            <summary>
+            Proxy stage: write the worker response back to the HTTP caller.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.StageHandler">
+            <summary>
+            Worker stage: run the application's request handler.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.StageReply">
+            <summary>
+            Worker stage: serialize and send the response back to the controller.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.LabelOutcome">
+            <summary>
+            Label key: operation or stage outcome.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.LabelStage">
+            <summary>
+            Label key: proxy stage.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.LabelDecision">
+            <summary>
+            Label key: placement decision.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.LabelEvent">
+            <summary>
+            Label key: lifecycle event.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.LabelState">
+            <summary>
+            Label key: worker state.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.LabelComponent">
+            <summary>
+            Label key: emitting component (controller or worker).
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.LabelDirection">
+            <summary>
+            Label key: message direction (sent or received).
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.LabelMessageType">
+            <summary>
+            Label key: WebSocket message type.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.LabelOperation">
+            <summary>
+            Label key: operation name.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.LabelErrorType">
+            <summary>
+            Label key: error type (exception type name or a bounded error code).
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.LabelHttpMethod">
+            <summary>
+            Label key: HTTP request method (normalized to a bounded set).
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.LabelVersion">
+            <summary>
+            Label key: build version.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.LabelRuntime">
+            <summary>
+            Label key: .NET runtime description.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.AttrResource">
+            <summary>
+            Span attribute: the resource key (raw URL path without query).  Span only, never a metric label.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.AttrWorkerId">
+            <summary>
+            Span attribute: the worker GUID.  Span only, never a metric label.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.AttrMessageId">
+            <summary>
+            Span attribute: the WebSocket message GUID.  Span only, never a metric label.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.AttrPlacementDecision">
+            <summary>
+            Span attribute: the placement decision.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.AttrOutcome">
+            <summary>
+            Span attribute: the outcome of the span's operation.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.AttrHeartbeatFailures">
+            <summary>
+            Span attribute: the number of consecutive heartbeat failures.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.AttrCount">
+            <summary>
+            Span attribute: number of items affected by the operation.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.AttrHttpStatusCode">
+            <summary>
+            Span attribute: HTTP response status code returned by the worker.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.AttrHttpMethod">
+            <summary>
+            Span attribute: HTTP request method.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.AttrMessagingSystem">
+            <summary>
+            Span attribute: messaging system, always <c>websocket</c>.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.AttrServerAddress">
+            <summary>
+            Span attribute: server address the worker connects to.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.AttrServerPort">
+            <summary>
+            Span attribute: server port the worker connects to.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.AttrErrorType">
+            <summary>
+            Span attribute: error type for failed spans.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.ComponentController">
+            <summary>
+            Component value: controller.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.ComponentWorker">
+            <summary>
+            Component value: worker.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.OutcomeSuccess">
+            <summary>
+            Outcome value: success.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.OutcomeFailure">
+            <summary>
+            Outcome value: failure (an expected, handled failure such as a failed send).
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.OutcomeError">
+            <summary>
+            Outcome value: error (an unexpected exception).
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.OutcomeTimeout">
+            <summary>
+            Outcome value: timeout.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.OutcomeNoWorker">
+            <summary>
+            Outcome value: no worker was available to own the resource.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.OutcomeSendFailed">
+            <summary>
+            Outcome value: the request could not be sent to the worker.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.OutcomeNoResponse">
+            <summary>
+            Outcome value: the worker returned no response.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.OutcomeCanceled">
+            <summary>
+            Outcome value: the operation was canceled (for example during shutdown).
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.OutcomeUnauthorized">
+            <summary>
+            Outcome value: the caller was not authorized.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.OutcomeDuplicate">
+            <summary>
+            Outcome value: a duplicate item was rejected.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.OutcomeDiscarded">
+            <summary>
+            Outcome value: the message was discarded (for example from an unknown sender).
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.DecisionPinned">
+            <summary>
+            Decision value: the resource was already pinned to a healthy worker.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.DecisionAssigned">
+            <summary>
+            Decision value: the resource was assigned to a worker for the first time.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.DecisionReassigned">
+            <summary>
+            Decision value: the resource's previous worker was gone or unhealthy and it was reassigned (failover).
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.DecisionNoWorkers">
+            <summary>
+            Decision value: no workers were registered.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.DecisionNoHealthyWorkers">
+            <summary>
+            Decision value: workers were registered but none were healthy.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.StateHealthy">
+            <summary>
+            State value: healthy.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.StateUnhealthy">
+            <summary>
+            State value: unhealthy.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.EventConnected">
+            <summary>
+            Event value: connected.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.EventDisconnected">
+            <summary>
+            Event value: disconnected.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.EventEvicted">
+            <summary>
+            Event value: marked unhealthy after exceeding the heartbeat failure limit.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.EventRecovered">
+            <summary>
+            Event value: returned to healthy after a successful heartbeat.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.DirectionSent">
+            <summary>
+            Direction value: sent.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.DirectionReceived">
+            <summary>
+            Direction value: received.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.OperationListWorkers">
+            <summary>
+            Operation value: list workers (admin API).
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.OperationListMaps">
+            <summary>
+            Operation value: list resource maps (admin API).
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.OperationAuthenticate">
+            <summary>
+            Operation value: authenticate an admin request.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.OperationProxy">
+            <summary>
+            Operation value: proxy a request.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.OperationReceive">
+            <summary>
+            Operation value: process an inbound WebSocket message.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.OperationHeartbeat">
+            <summary>
+            Operation value: send a heartbeat.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.OperationCleanup">
+            <summary>
+            Operation value: correlation-store cleanup.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.OperationConnect">
+            <summary>
+            Operation value: worker connection maintenance.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.OperationHandle">
+            <summary>
+            Operation value: worker request handling.
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.OperationLifecycle">
+            <summary>
+            Operation value: lifecycle callback (OnConnection or OnDisconnection).
+            </summary>
+        </member>
+        <member name="F:Constellation.Core.Telemetry.TelemetryConstants.HttpMethodOther">
+            <summary>
+            HTTP method value used for any method outside the well-known set.
+            </summary>
+        </member>
         <member name="T:Constellation.Core.UrlDetails">
             <summary>
             URL details.
@@ -602,6 +1233,18 @@
         <member name="P:Constellation.Core.WebsocketMessage.Data">
             <summary>
             Data.
+            </summary>
+        </member>
+        <member name="P:Constellation.Core.WebsocketMessage.TraceParent">
+            <summary>
+            W3C trace context (traceparent) of the span that produced this message, used to continue the
+            distributed trace across the controller/worker WebSocket hop.  Null when no span was active
+            or telemetry is not subscribed.  Peers that predate this property ignore it.
+            </summary>
+        </member>
+        <member name="P:Constellation.Core.WebsocketMessage.TraceState">
+            <summary>
+            W3C trace state (tracestate) accompanying <see cref="P:Constellation.Core.WebsocketMessage.TraceParent"/>.  Null when absent.
             </summary>
         </member>
         <member name="M:Constellation.Core.WebsocketMessage.#ctor">

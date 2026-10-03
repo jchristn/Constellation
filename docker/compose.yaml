@@ -1,3 +1,5 @@
+name: constellation
+
 services:
 
   #
@@ -5,18 +7,34 @@ services:
   # See https://hub.docker.com/r/jchristn77/constellation
   # and https://github.com/jchristn/constellation
   #
+  # REST (client requests) on 8000, WebSocket (worker connections) on 8001.
+  # Telemetry: Prometheus scrapes the in-process endpoint on 9464 (not published to the host);
+  # traces and logs are pushed over OTLP to the collector.
+  #
 
   controller:
     container_name: 'constellation-controller'
-    image: 'jchristn77/constellation:v1.0.5'
-    network_mode: 'host'
+    # The hostname matters: Telemetry.PrometheusHostname in constellation.json binds the scrape
+    # endpoint to the address this name resolves to inside the compose network.
+    hostname: 'constellation-controller'
+    image: 'jchristn77/constellation:v1.0.0'
     stdin_open: true
     tty: true
+    ports:
+      - '8000:8000'
+      - '8001:8001'
     volumes:
       - ./constellation.json:/app/constellation.json
       - ./logs/:/app/logs/
+    depends_on:
+      otel-collector:
+        condition: service_started
     healthcheck:
-      test: curl --fail http://localhost:8000
+      test: ['CMD', 'curl', '-f', 'http://127.0.0.1:8000/']
+      interval: 5s
+      timeout: 2s
+      retries: 2
+      start_period: 15s
 
   #
   # Constellation Dashboard
@@ -32,3 +50,123 @@ services:
     depends_on:
       controller:
         condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://127.0.0.1:8080/']
+      interval: 5s
+      timeout: 2s
+      retries: 2
+      start_period: 10s
+
+  # ------------------------------------------------------------------
+  # Observability: OpenTelemetry Collector + Prometheus + Tempo + Loki + Grafana
+  # ------------------------------------------------------------------
+
+  otel-collector:
+    container_name: 'constellation-otel-collector'
+    # Receives OTLP from the controller (and from any host-run workers that export telemetry),
+    # forwards traces to Tempo and logs to Loki. The image is distroless (no shell or curl),
+    # so it carries no healthcheck; dependents use condition: service_started.
+    image: 'otel/opentelemetry-collector-contrib:0.109.0'
+    command: ['--config=/etc/otel-collector.yaml']
+    ports:
+      - '4317:4317'
+      - '4318:4318'
+    volumes:
+      - ./otel-collector.yaml:/etc/otel-collector.yaml:ro
+    depends_on:
+      tempo:
+        condition: service_healthy
+      loki:
+        condition: service_healthy
+
+  prometheus:
+    container_name: 'constellation-prometheus'
+    image: 'prom/prometheus:v3.5.4'
+    ports:
+      - '9090:9090'
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yaml'
+      - '--storage.tsdb.path=/prometheus'
+    volumes:
+      - ./prometheus.yaml:/etc/prometheus/prometheus.yaml:ro
+      - constellation-prometheus-data:/prometheus
+    depends_on:
+      controller:
+        condition: service_healthy
+    healthcheck:
+      # The prometheus image ships wget (not curl); /-/healthy returns 200 when ready.
+      test: ['CMD-SHELL', 'wget -q -O /dev/null http://127.0.0.1:9090/-/healthy || exit 1']
+      interval: 5s
+      timeout: 2s
+      retries: 2
+      start_period: 20s
+
+  tempo:
+    container_name: 'constellation-tempo'
+    # Pinned: later builds reject the standard ingester/compactor sections in tempo.yaml.
+    image: 'grafana/tempo:2.6.1'
+    command: ['-config.file=/etc/tempo.yaml']
+    ports:
+      - '3200:3200'
+    volumes:
+      - ./tempo.yaml:/etc/tempo.yaml:ro
+      - constellation-tempo-data:/var/tempo
+    healthcheck:
+      # The tempo image ships wget (not curl); /ready returns 503 until fully ready, then 200.
+      test: ['CMD-SHELL', 'wget -q -O /dev/null http://127.0.0.1:3200/ready || exit 1']
+      interval: 5s
+      timeout: 2s
+      retries: 2
+      start_period: 40s
+
+  loki:
+    container_name: 'constellation-loki'
+    image: 'grafana/loki:3.2.1'
+    command: ['-config.file=/etc/loki/local-config.yaml']
+    ports:
+      - '3100:3100'
+    volumes:
+      - constellation-loki-data:/loki
+    healthcheck:
+      # The loki image ships wget (not curl); /ready returns 200 once the ingester is ready.
+      test: ['CMD-SHELL', 'wget -q -O /dev/null http://127.0.0.1:3100/ready || exit 1']
+      interval: 5s
+      timeout: 2s
+      retries: 2
+      start_period: 30s
+
+  grafana:
+    container_name: 'constellation-grafana'
+    image: 'grafana/grafana-oss:13.0.2'
+    ports:
+      - '3000:3000'
+    environment:
+      # Local-development defaults. Override GRAFANA_ADMIN_USER / GRAFANA_ADMIN_PASSWORD out of band
+      # (environment or .env file) for any shared deployment; never commit a real password here.
+      GF_SECURITY_ADMIN_USER: '${GRAFANA_ADMIN_USER:-admin}'
+      GF_SECURITY_ADMIN_PASSWORD: '${GRAFANA_ADMIN_PASSWORD:-admin}'
+      GF_USERS_ALLOW_SIGN_UP: 'false'
+    volumes:
+      - constellation-grafana-data:/var/lib/grafana
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ../assets/grafana:/var/lib/grafana/dashboards/constellation:ro
+    depends_on:
+      prometheus:
+        condition: service_healthy
+      tempo:
+        condition: service_healthy
+      loki:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -fsS http://127.0.0.1:3000/api/health || exit 1']
+      interval: 5s
+      timeout: 2s
+      retries: 2
+      start_period: 30s
+
+volumes:
+  constellation-prometheus-data:
+  constellation-tempo-data:
+  constellation-loki-data:
+  constellation-grafana-data:

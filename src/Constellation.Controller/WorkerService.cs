@@ -1,12 +1,14 @@
 ﻿namespace Constellation.Controller
 {
-    using SyslogLogging;
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq;
     using System.Text;
     using System.Threading.Tasks;
+    using Constellation.Core.Telemetry;
+    using SyslogLogging;
 
     /// <summary>
     /// Worker service.
@@ -47,6 +49,7 @@
         private List<WorkerMetadata> _Workers = new List<WorkerMetadata>();
         private readonly object _WorkersLock = new object();
         private int _LastIndex = 0;
+        private DateTime _RetiredLastHeartbeatSuccessUtc = DateTime.MinValue;
 
         private Dictionary<Guid, List<string>> _ResourceMap = new Dictionary<Guid, List<string>>();
         private readonly object _ResourceMapLock = new object();
@@ -70,7 +73,87 @@
         /// <returns>WorkerMetadata.</returns>
         public WorkerMetadata GetByResource(string resource)
         {
+            return GetByResource(resource, out _);
+        }
+
+        /// <summary>
+        /// Retrieve worker by resource, reporting the placement decision.
+        /// </summary>
+        /// <param name="resource">Resource.</param>
+        /// <param name="decision">Placement decision, one of the TelemetryConstants.Decision* values.</param>
+        /// <returns>WorkerMetadata, or null when no healthy worker is available.</returns>
+        internal WorkerMetadata GetByResource(string resource, out string decision)
+        {
             if (String.IsNullOrEmpty(resource)) throw new ArgumentNullException(nameof(resource));
+
+            long start = ConstellationTelemetry.StartTimestamp();
+            decision = TelemetryConstants.DecisionNoWorkers;
+
+            try
+            {
+                return SelectWorker(resource, out decision);
+            }
+            finally
+            {
+                TagList tags = new TagList { { TelemetryConstants.LabelDecision, decision } };
+                ConstellationTelemetry.Add(ConstellationTelemetry.PlacementDecisions, 1, tags);
+                ConstellationTelemetry.Record(ConstellationTelemetry.PlacementDuration, ConstellationTelemetry.ElapsedSeconds(start), tags);
+            }
+        }
+
+        internal long HealthyCount
+        {
+            get
+            {
+                lock (_WorkersLock)
+                {
+                    return _Workers.Count(w => w.Healthy);
+                }
+            }
+        }
+
+        internal long UnhealthyCount
+        {
+            get
+            {
+                lock (_WorkersLock)
+                {
+                    return _Workers.Count(w => !w.Healthy);
+                }
+            }
+        }
+
+        internal long MappedResourceCount
+        {
+            get
+            {
+                lock (_ResourceMapLock)
+                {
+                    return _ResourceMap.Values.Sum(v => (long)v.Count);
+                }
+            }
+        }
+
+        internal DateTime LastHeartbeatSuccessUtc
+        {
+            get
+            {
+                lock (_WorkersLock)
+                {
+                    DateTime max = _RetiredLastHeartbeatSuccessUtc;
+                    foreach (WorkerMetadata worker in _Workers)
+                    {
+                        if (worker.LastHeartbeatSuccessUtc > max) max = worker.LastHeartbeatSuccessUtc;
+                    }
+
+                    return max;
+                }
+            }
+        }
+
+        private WorkerMetadata SelectWorker(string resource, out string decision)
+        {
+            bool previouslyMapped = false;
 
             lock (_ResourceMapLock)
             {
@@ -94,10 +177,13 @@
                         if (worker != null && worker.Healthy)
                         {
                             _Logging.Debug(_Header + $"resource '{resource}' mapped to existing worker {existingWorkerGuid.Value}");
+                            decision = TelemetryConstants.DecisionPinned;
                             return worker;
                         }
                         else
                         {
+                            previouslyMapped = true;
+
                             // Worker is no longer available, remove mapping
                             if (_ResourceMap.ContainsKey(existingWorkerGuid.Value))
                             {
@@ -118,6 +204,7 @@
                     if (_Workers.Count < 1)
                     {
                         _Logging.Warn(_Header + "no workers available to satisfy request to resource " + resource);
+                        decision = TelemetryConstants.DecisionNoWorkers;
                         return null;
                     }
 
@@ -145,6 +232,7 @@
                     if (selectedWorker == null)
                     {
                         _Logging.Warn(_Header + "no healthy workers available to satisfy request to resource " + resource);
+                        decision = TelemetryConstants.DecisionNoHealthyWorkers;
                         return null;
                     }
 
@@ -156,6 +244,7 @@
                     _ResourceMap[selectedWorker.GUID].Add(resource);
                     _Logging.Info(_Header + $"Resource '{resource}' newly mapped to worker {selectedWorker.GUID}");
 
+                    decision = previouslyMapped ? TelemetryConstants.DecisionReassigned : TelemetryConstants.DecisionAssigned;
                     return selectedWorker;
                 }
             }
@@ -200,6 +289,13 @@
         {
             lock (_WorkersLock)
             {
+                // Keep the most recent heartbeat success of departing workers so the last-success gauge survives removal.
+                foreach (WorkerMetadata departing in _Workers.Where(w => w.GUID == guid))
+                {
+                    if (departing.LastHeartbeatSuccessUtc > _RetiredLastHeartbeatSuccessUtc)
+                        _RetiredLastHeartbeatSuccessUtc = departing.LastHeartbeatSuccessUtc;
+                }
+
                 bool removed = _Workers.RemoveAll(w => w.GUID == guid) > 0;
 
                 if (removed)

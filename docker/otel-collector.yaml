@@ -1,0 +1,57 @@
+# OpenTelemetry Collector for the Constellation stack.
+#
+# Traces -> Tempo, logs -> Loki.
+# Metrics: Prometheus scrapes the controller's in-process endpoint directly (names exactly as documented
+# in TELEMETRY.md), so the controller's OTLP metric push is dropped here to avoid duplicate series.
+# Metrics pushed by any other service (for example worker processes hosting Constellation.Worker with
+# their own Radiant host) are exposed on :8889 for Prometheus to scrape.
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch:
+    timeout: 5s
+  memory_limiter:
+    check_interval: 2s
+    limit_percentage: 80
+    spike_limit_percentage: 25
+  filter/scraped-directly:
+    error_mode: ignore
+    metrics:
+      metric:
+        - 'resource.attributes["service.name"] == "constellation-controller"'
+
+exporters:
+  otlp/tempo:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
+  otlphttp/loki:
+    endpoint: http://loki:3100/otlp
+    tls:
+      insecure: true
+  prometheus:
+    endpoint: 0.0.0.0:8889
+    resource_to_telemetry_conversion:
+      enabled: true
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlp/tempo]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlphttp/loki]
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, filter/scraped-directly, batch]
+      exporters: [prometheus]

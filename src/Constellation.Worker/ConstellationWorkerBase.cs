@@ -1,6 +1,7 @@
 ﻿namespace Constellation.Worker
 {
     using System;
+    using System.Diagnostics;
     using System.Net.WebSockets;
     using System.Reflection.Metadata.Ecma335;
     using System.Text;
@@ -8,6 +9,7 @@
     using System.Threading.Tasks;
     using Constellation.Core;
     using Constellation.Core.Serialization;
+    using Constellation.Core.Telemetry;
     using SyslogLogging;
     using WatsonWebsocket;
 
@@ -93,6 +95,7 @@
         private Serializer _Serializer = new Serializer();
 
         private CancellationTokenSource _TokenSource = new CancellationTokenSource();
+        private WorkerTelemetryState _TelemetryState = null;
         private bool _Disposed = false;
 
         /// <summary>
@@ -116,6 +119,9 @@
             _Websocket.ServerConnected += ServerConnected;
             _Websocket.ServerDisconnected += ServerDisconnected;
             _Websocket.MessageReceived += ServerMessageReceived;
+
+            _TelemetryState = new WorkerTelemetryState(() => IsConnected);
+            ConstellationTelemetry.RegisterWorker(_TelemetryState);
         }
 
         /// <summary>
@@ -153,6 +159,7 @@
                     }
                 }
 
+                ConstellationTelemetry.UnregisterWorker(_TelemetryState);
                 _Websocket = null;
                 _Disposed = true;
             }
@@ -215,49 +222,167 @@
 
         private void ServerDisconnected(object sender, EventArgs e)
         {
-            if (OnDisconnection != null) OnDisconnection(GUID).Wait();
+            ConstellationTelemetry.Add(ConstellationTelemetry.WorkerConnectionEvents, 1, new TagList { { TelemetryConstants.LabelEvent, TelemetryConstants.EventDisconnected } });
+            if (OnDisconnection != null) InvokeLifecycle(() => OnDisconnection(GUID));
         }
 
         private void ServerConnected(object sender, EventArgs e)
         {
-            if (OnConnection != null) OnConnection(GUID).Wait();
+            ConstellationTelemetry.Add(ConstellationTelemetry.WorkerConnectionEvents, 1, new TagList { { TelemetryConstants.LabelEvent, TelemetryConstants.EventConnected } });
+            if (OnConnection != null) InvokeLifecycle(() => OnConnection(GUID));
+        }
+
+        private void InvokeLifecycle(Func<Task> callback)
+        {
+            try
+            {
+                callback().Wait();
+            }
+            catch (Exception e)
+            {
+                ConstellationTelemetry.RecordError(TelemetryConstants.ComponentWorker, TelemetryConstants.OperationLifecycle, e is AggregateException && e.InnerException != null ? e.InnerException : e);
+                throw;
+            }
         }
 
         private async void ServerMessageReceived(object sender, MessageReceivedEventArgs e)
         {
-            if (OnRequestReceived == null) throw new NotImplementedException("The request handler has not been implemented.");
-            byte[] data = (e.Data != null ? e.Data.ToArray() : new byte[0]);
-            string json = Encoding.UTF8.GetString(data);
-            
-            WebsocketMessage request = _Serializer.DeserializeJson<WebsocketMessage>(json);
-            WebsocketMessage response = null;
+            int size = e.Data != null ? e.Data.Count : 0;
+            long start = ConstellationTelemetry.StartTimestamp();
+            Activity span = null;
+            string outcome = TelemetryConstants.OutcomeError;
+            bool isRequest = false;
 
-            if (request.Type == WebsocketMessageTypeEnum.Heartbeat)
+            try
             {
-                _Logging.Debug(_Header + "heartbeat received");
+                if (OnRequestReceived == null) throw new NotImplementedException("The request handler has not been implemented.");
+                byte[] data = (e.Data != null ? e.Data.ToArray() : new byte[0]);
+                string json = Encoding.UTF8.GetString(data);
 
-                response = new WebsocketMessage
+                WebsocketMessage request = _Serializer.DeserializeJson<WebsocketMessage>(json);
+                WebsocketMessage response = null;
+
+                ConstellationTelemetry.RecordWebsocketMessage(TelemetryConstants.ComponentWorker, TelemetryConstants.DirectionReceived, request.Type, TelemetryConstants.OutcomeSuccess, size);
+
+                if (request.Type == WebsocketMessageTypeEnum.Heartbeat)
                 {
-                    GUID = request.GUID,
-                    Type = WebsocketMessageTypeEnum.Heartbeat
-                };
-            }
-            else
-            {
-                _Logging.Debug(_Header + "received message type " + request.Type + " (" + data.Length + " bytes)");
-                response = await OnRequestReceived(request);
-                if (response == null)
-                {
-                    _Logging.Warn(_Header + "no response message received from message handler");
-                    return;
+                    _Logging.Debug(_Header + "heartbeat received");
+
+                    response = new WebsocketMessage
+                    {
+                        GUID = request.GUID,
+                        Type = WebsocketMessageTypeEnum.Heartbeat
+                    };
                 }
-                
-                response.GUID = request.GUID;
-            }
+                else
+                {
+                    isRequest = true;
+                    span = ConstellationTelemetry.StartActivityFromTraceParent(TelemetryConstants.SpanWorkerHandle, ActivityKind.Server, request.TraceParent, request.TraceState);
+                    ConstellationTelemetry.SetTag(span, TelemetryConstants.AttrMessageId, request.GUID.ToString());
+                    ConstellationTelemetry.SetTag(span, TelemetryConstants.AttrWorkerId, GUID.ToString());
+                    ConstellationTelemetry.SetTag(span, TelemetryConstants.AttrMessagingSystem, "websocket");
+                    if (!String.IsNullOrEmpty(request.Method)) ConstellationTelemetry.SetTag(span, TelemetryConstants.AttrHttpMethod, request.Method);
+                    if (request.Url != null && request.Url.Uri != null) ConstellationTelemetry.SetTag(span, TelemetryConstants.AttrResource, request.Url.Uri.AbsolutePath);
 
-            json = _Serializer.SerializeJson(response, false);
-            data = Encoding.UTF8.GetBytes(json);
-            await _Websocket.SendAsync(data, WebSocketMessageType.Binary, _TokenSource.Token).ConfigureAwait(false);
+                    _Logging.Debug(_Header + "received message type " + request.Type + " (" + data.Length + " bytes)");
+
+                    long handlerStart = ConstellationTelemetry.StartTimestamp();
+                    Activity handlerSpan = ConstellationTelemetry.StartActivity(TelemetryConstants.SpanStagePrefix + TelemetryConstants.StageHandler, ActivityKind.Internal);
+                    string handlerOutcome = TelemetryConstants.OutcomeError;
+                    try
+                    {
+                        response = await OnRequestReceived(request);
+                        handlerOutcome = response != null ? TelemetryConstants.OutcomeSuccess : TelemetryConstants.OutcomeNoResponse;
+                        if (response != null) ConstellationTelemetry.SetOk(handlerSpan);
+                        else ConstellationTelemetry.SetError(handlerSpan, handlerOutcome, "Request handler returned no response.");
+                    }
+                    catch (Exception ex)
+                    {
+                        ConstellationTelemetry.SetException(handlerSpan, ex);
+                        throw;
+                    }
+                    finally
+                    {
+                        ConstellationTelemetry.Record(
+                            ConstellationTelemetry.WorkerHandlerDuration,
+                            ConstellationTelemetry.ElapsedSeconds(handlerStart),
+                            new TagList { { TelemetryConstants.LabelOutcome, handlerOutcome } });
+                        ConstellationTelemetry.Stop(handlerSpan);
+                    }
+
+                    if (response == null)
+                    {
+                        _Logging.Warn(_Header + "no response message received from message handler");
+                        outcome = TelemetryConstants.OutcomeNoResponse;
+                        ConstellationTelemetry.SetError(span, outcome, "Request handler returned no response.");
+                        return;
+                    }
+
+                    response.GUID = request.GUID;
+                    if (response.StatusCode != null) ConstellationTelemetry.SetTag(span, TelemetryConstants.AttrHttpStatusCode, response.StatusCode.Value);
+                }
+
+                Activity replySpan = isRequest
+                    ? ConstellationTelemetry.StartActivity(TelemetryConstants.SpanStagePrefix + TelemetryConstants.StageReply, ActivityKind.Producer)
+                    : null;
+
+                try
+                {
+                    // Continue the trace back on the controller's response-receipt span.
+                    if (isRequest) ConstellationTelemetry.Inject(replySpan ?? span, response);
+
+                    json = _Serializer.SerializeJson(response, false);
+                    data = Encoding.UTF8.GetBytes(json);
+                    bool sent = await _Websocket.SendAsync(data, WebSocketMessageType.Binary, _TokenSource.Token).ConfigureAwait(false);
+
+                    ConstellationTelemetry.RecordWebsocketMessage(
+                        TelemetryConstants.ComponentWorker,
+                        TelemetryConstants.DirectionSent,
+                        response.Type,
+                        sent ? TelemetryConstants.OutcomeSuccess : TelemetryConstants.OutcomeFailure,
+                        data.Length);
+
+                    outcome = sent ? TelemetryConstants.OutcomeSuccess : TelemetryConstants.OutcomeSendFailed;
+                    if (sent) ConstellationTelemetry.SetOk(replySpan);
+                    else ConstellationTelemetry.SetError(replySpan, outcome, "WebSocket send to controller failed.");
+                }
+                catch (Exception ex)
+                {
+                    ConstellationTelemetry.SetException(replySpan, ex);
+                    throw;
+                }
+                finally
+                {
+                    ConstellationTelemetry.Stop(replySpan);
+                }
+
+                if (isRequest)
+                {
+                    if (outcome == TelemetryConstants.OutcomeSuccess) ConstellationTelemetry.SetOk(span);
+                    else ConstellationTelemetry.SetError(span, outcome, "WebSocket send to controller failed.");
+                }
+            }
+            catch (Exception ex)
+            {
+                // An exception escaping an 'async void' handler would crash the host process; record it instead.
+                outcome = ex is OperationCanceledException ? TelemetryConstants.OutcomeCanceled : TelemetryConstants.OutcomeError;
+                _Logging.Warn(_Header + "exception handling message from controller:" + Environment.NewLine + ex.ToString());
+                ConstellationTelemetry.RecordError(TelemetryConstants.ComponentWorker, TelemetryConstants.OperationHandle, ex);
+                if (!isRequest)
+                    ConstellationTelemetry.RecordWebsocketMessage(TelemetryConstants.ComponentWorker, TelemetryConstants.DirectionReceived, WebsocketMessageTypeEnum.Unknown, TelemetryConstants.OutcomeError, size);
+                ConstellationTelemetry.SetException(span, ex, outcome);
+            }
+            finally
+            {
+                if (isRequest)
+                {
+                    TagList tags = new TagList { { TelemetryConstants.LabelOutcome, outcome } };
+                    ConstellationTelemetry.Add(ConstellationTelemetry.WorkerRequests, 1, tags);
+                    ConstellationTelemetry.Record(ConstellationTelemetry.WorkerRequestDuration, ConstellationTelemetry.ElapsedSeconds(start), tags);
+                }
+
+                ConstellationTelemetry.Stop(span);
+            }
         }
 
         private async Task MaintainConnection()
@@ -284,7 +409,14 @@
                     #region Check-Connection
 
                     if (IsConnected) continue;
-                    else
+
+                    Activity connectSpan = ConstellationTelemetry.StartActivity(TelemetryConstants.SpanWorkerConnect, ActivityKind.Client, default(ActivityContext));
+                    ConstellationTelemetry.SetTag(connectSpan, TelemetryConstants.AttrWorkerId, _GUID.ToString());
+                    ConstellationTelemetry.SetTag(connectSpan, TelemetryConstants.AttrServerAddress, _ServerHostname);
+                    ConstellationTelemetry.SetTag(connectSpan, TelemetryConstants.AttrServerPort, _ServerPort);
+                    string connectOutcome = TelemetryConstants.OutcomeError;
+
+                    try
                     {
                         _Logging.Debug(_Header + "worker is not connected, attempting reconnection");
                         
@@ -296,12 +428,36 @@
                         _Websocket.MessageReceived += ServerMessageReceived;
                         
                         await _Websocket.StartAsync();
-                    }
 
-                    if (IsConnected)
-                        _Logging.Info(_Header + "websocket connected to " + ControllerUrl);
-                    else
-                        _Logging.Warn(_Header + "websocket connection failed to " + ControllerUrl);
+                        if (IsConnected)
+                        {
+                            _Logging.Info(_Header + "websocket connected to " + ControllerUrl);
+                            connectOutcome = TelemetryConstants.OutcomeSuccess;
+                            ConstellationTelemetry.SetOk(connectSpan);
+                        }
+                        else
+                        {
+                            _Logging.Warn(_Header + "websocket connection failed to " + ControllerUrl);
+                            connectOutcome = TelemetryConstants.OutcomeFailure;
+                            ConstellationTelemetry.SetError(connectSpan, connectOutcome, "WebSocket connection to controller failed.");
+                        }
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        connectOutcome = TelemetryConstants.OutcomeCanceled;
+                        throw;
+                    }
+                    catch (Exception ex)
+                    {
+                        ConstellationTelemetry.SetException(connectSpan, ex);
+                        ConstellationTelemetry.RecordError(TelemetryConstants.ComponentWorker, TelemetryConstants.OperationConnect, ex);
+                        throw;
+                    }
+                    finally
+                    {
+                        ConstellationTelemetry.Add(ConstellationTelemetry.WorkerConnectionAttempts, 1, new TagList { { TelemetryConstants.LabelOutcome, connectOutcome } });
+                        ConstellationTelemetry.Stop(connectSpan);
+                    }
 
                     #endregion
                 }

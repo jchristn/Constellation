@@ -113,8 +113,11 @@ The raw URL (without query parameters) becomes the resource key for pinning. For
 ## Installation
 
 ```bash
-dotnet add package Constellation
+dotnet add package Constellation.Controller   # controller base class
+dotnet add package Constellation.Worker       # worker base class
 ```
+
+Both depend on `Constellation.Core`, which is installed automatically.
 
 ## Quick Start
 
@@ -474,6 +477,7 @@ Constellation includes a web-based dashboard for monitoring and managing your co
 - **Light/dark theme** with automatic persistence
 - **Auto-refresh** every 10 seconds
 - **Copy-to-clipboard** for GUIDs and resource paths
+- **External Services** card linking to Grafana, Prometheus, Tempo, and Loki with their URLs and default credentials
 
 ### Running the Dashboard
 
@@ -506,20 +510,20 @@ The official Docker image for the controller is available at: [`jchristn77/const
 ```bash
 # Using the run script
 cd docker
-run.bat v1.0.5        # Windows
-./run.sh v1.0.5       # Linux/macOS
+run.bat v1.0.0        # Windows
+./run.sh v1.0.0       # Linux/macOS
 
 # Or using Docker directly
 docker run -d \
   --name constellation-controller \
   --network host \
   -v ./constellation.json:/app/constellation.json \
-  jchristn77/constellation:v1.0.5
+  jchristn77/constellation:v1.0.0
 ```
 
-### Controller + Dashboard (Docker Compose)
+### Controller + Dashboard + Observability (Docker Compose)
 
-The `docker/compose.yaml` file runs both the controller and dashboard together:
+The `docker/compose.yaml` file runs the controller, the dashboard, and a complete observability stack together:
 
 ```bash
 cd docker
@@ -529,19 +533,44 @@ docker compose up -d
 This starts:
 - **Controller** on port `8000` (HTTP) and port `8001` (WebSocket)
 - **Dashboard** on port `8080`
+- **Grafana** on port `3000` (`admin` / `admin` locally) with a provisioned **Constellation** dashboard folder
+- **Prometheus** on port `9090`, **Tempo** on port `3200`, **Loki** on port `3100`
+- **OpenTelemetry Collector** on ports `4317` (gRPC) and `4318` (HTTP) for OTLP from the controller and from any workers you run
 
-Open `http://localhost:8080` in your browser and connect to `http://localhost:8000` with your admin API key.
+Open `http://localhost:8080` in your browser and connect to `http://localhost:8000` with your admin API key. The dashboard's home page links to the observability tools. For any shared deployment, set `GRAFANA_ADMIN_USER` and `GRAFANA_ADMIN_PASSWORD` before starting the stack. To pull newer images and recreate the stack without losing data, run `docker/update.bat` or `docker/update.sh`.
 
 ### Building Docker Images
 
 ```bash
-# Build controller image
-build-server.bat v1.0.5
+# Build and push controller and dashboard images (multi-arch, via the cloud builder)
+build-all.bat v1.0.0        # Windows
+./build-all.sh v1.0.0       # Linux/macOS
 
-# Build dashboard image
-cd dashboard
-docker build -t constellation-dashboard .
+# Or individually
+build-server.bat v1.0.0     # or ./build-server.sh v1.0.0
+build-dashboard.bat v1.0.0  # or ./build-dashboard.sh v1.0.0
 ```
+
+## Observability
+
+Constellation ships with metrics, traces, and logs built in, so an operator can see from Grafana alone where time went and what failed.
+
+- **Libraries emit, applications host.** `Constellation.Core`, `Constellation.Controller`, and `Constellation.Worker` record into a BCL `Meter` and `ActivitySource` named `Constellation`, with no exporter dependency. With nothing subscribed, recording is effectively free.
+- **Watson 7.2 covers HTTP.** The controller's Watson listener emits the standard `http.server.*` metrics and one server span per request.
+- **Constellation covers everything behind the route:** placement decisions (pinned, assigned, failover, rejected), every proxy stage (`placement`, `dispatch`, `await_response`, `respond`) with outcomes (`success`, `no_worker`, `send_failed`, `timeout`, `no_response`, `error`), worker pool and heartbeat health, the response correlation store, WebSocket messaging, admin API usage, caught errors by type, build info, and configuration.
+- **One trace per request, across processes.** Trace context travels inside the WebSocket message, so the controller's spans and the worker's `worker handle` span (and anything your handler calls) form a single trace.
+- **The controller server exports out of the box** through [Radiant](https://github.com/jchristn/Radiant): a Prometheus scrape endpoint plus OTLP to a collector, Tempo, or Loki. Configure it under `Telemetry` in `constellation.json`.
+
+Subscribe your own controller or worker host by name:
+
+```csharp
+RadiantSettings settings = new RadiantSettings("my-worker");
+settings.Sources.AddMeter("Constellation");
+settings.Sources.AddActivitySource("Constellation");
+using RadiantHost host = RadiantHost.Start(settings);
+```
+
+See [TELEMETRY.md](TELEMETRY.md) for the full metric and span catalog, configuration keys, the dashboard map, and recommended alerts.
 
 ## Configuration
 
@@ -570,9 +599,17 @@ var settings = new Settings
     {
         TimeoutMs = 30000,        // Request timeout
         ResponseRetentionMs = 30000
+    },
+    Telemetry = new TelemetrySettings
+    {
+        OtlpEndpoint = "http://127.0.0.1:4317",   // used by Constellation.ControllerServer's Radiant host
+        PrometheusEnable = true,                  // scrape at http://127.0.0.1:9464/metrics
+        PrometheusPort = 9464
     }
 };
 ```
+
+The `Telemetry` section is read by the controller server (`Constellation.ControllerServer` and the Docker image). If you host the controller yourself, subscribe your own collector to the `Constellation` and `Watson` sources instead; see [Observability](#observability).
 
 ### Health Check
 

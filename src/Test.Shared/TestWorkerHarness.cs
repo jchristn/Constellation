@@ -54,10 +54,22 @@ namespace Test.Shared
             return Task.CompletedTask;
         }
 
+        /// <summary>
+        /// Delay applied before answering each request, in milliseconds.  Default 0.  Used to exercise proxy timeouts.
+        /// </summary>
+        public int ResponseDelayMs { get; set; } = 0;
+
+        /// <summary>
+        /// When true, the request handler throws instead of answering.  Default false.
+        /// </summary>
+        public bool ThrowOnRequest { get; set; } = false;
+
         /// <inheritdoc />
-        public override Task<WebsocketMessage> OnRequestReceived(WebsocketMessage req)
+        public override async Task<WebsocketMessage> OnRequestReceived(WebsocketMessage req)
         {
-            if (req.Type.Equals(WebsocketMessageTypeEnum.Heartbeat)) return Task.FromResult<WebsocketMessage>(null);
+            if (req.Type.Equals(WebsocketMessageTypeEnum.Heartbeat)) return null;
+            if (ResponseDelayMs > 0) await Task.Delay(ResponseDelayMs).ConfigureAwait(false);
+            if (ThrowOnRequest) throw new InvalidOperationException("Simulated worker handler failure.");
 
             WebsocketMessage resp = new WebsocketMessage
             {
@@ -70,7 +82,7 @@ namespace Test.Shared
             };
 
             resp.Headers.Add("X-Worker-Id", $"worker-{_NodeNumber}");
-            return Task.FromResult(resp);
+            return resp;
         }
 
         /// <inheritdoc />

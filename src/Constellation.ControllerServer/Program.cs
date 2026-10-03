@@ -2,6 +2,7 @@
 {
     using System;
     using System.IO;
+    using System.Runtime.InteropServices;
     using System.Runtime.Loader;
     using System.Threading;
     using System.Threading.Tasks;
@@ -19,6 +20,8 @@
         private static LoggingModule _Logging = null;
         private static CancellationTokenSource _TokenSource = new CancellationTokenSource();
         private static Controller _Controller = null;
+        private static TelemetryHost _Telemetry = null;
+        private static Microsoft.Extensions.Logging.ILogger _StructuredLogger = Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance;
 
         public static async Task Main(string[] args)
         {
@@ -31,6 +34,14 @@
 
             EventWaitHandle waitHandle = new EventWaitHandle(false, EventResetMode.AutoReset);
             AssemblyLoadContext.Default.Unloading += (ctx) => waitHandle.Set();
+
+            // On SIGTERM (docker stop) cancel the default immediate termination so Main can stop the controller and
+            // flush and dispose the telemetry host before exiting.
+            using PosixSignalRegistration sigterm = PosixSignalRegistration.Create(PosixSignal.SIGTERM, (signal) =>
+            {
+                signal.Cancel = true;
+                waitHandle.Set();
+            });
             Console.CancelKeyPress += async (sender, eventArgs) =>
             {
                 waitHandle.Set();
@@ -48,6 +59,30 @@
             while (!waitHandleSignal);
 
             _Logging.Info(_Header + "stopping at " + DateTime.UtcNow);
+            LogStructured("Constellation controller stopping");
+
+            try
+            {
+                _Controller?.Dispose();
+            }
+            catch (Exception e)
+            {
+                _Logging.Warn(_Header + "exception disposing controller: " + e.Message);
+            }
+
+            _Telemetry?.Dispose();
+        }
+
+        private static void LogStructured(string message)
+        {
+            try
+            {
+                Microsoft.Extensions.Logging.LoggerExtensions.LogInformation(_StructuredLogger, message);
+            }
+            catch (Exception)
+            {
+                // best-effort
+            }
         }
 
         private static void Welcome()
@@ -111,10 +146,22 @@
 
             #endregion
 
+            #region Telemetry
+
+            if (!_Settings.Webserver.Telemetry.Enable)
+                _Logging.Warn(_Header + "Watson HTTP telemetry is disabled (Webserver.Telemetry.Enable = false); HTTP metrics and request spans will not be emitted");
+
+            _Telemetry = new TelemetryHost(_Settings, _Logging);
+            _StructuredLogger = _Telemetry.CreateLogger("Constellation.ControllerServer");
+
+            #endregion
+
             #region Controller
 
             _Controller = new Controller(_Settings, _Logging, _TokenSource);
+            _Controller.Logger = _Telemetry.CreateLogger("Constellation.Controller");
             await _Controller.Start();
+            LogStructured("Constellation controller started");
 
             string restScheme = _Settings.Webserver.Ssl.Enable ? "https" : "http";
             Console.WriteLine("REST server listening on " + restScheme + "://" + _Settings.Webserver.Hostname + ":" + _Settings.Webserver.Port);

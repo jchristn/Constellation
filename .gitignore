@@ -340,3 +340,5 @@ paket-files/
 __pycache__/
 *.pyc
  
+# Controller logs written by the docker/compose.yaml bind mount
+docker/logs/

@@ -76,6 +76,18 @@
             set => _Data = (value != null ? value : Array.Empty<byte>());
         }
 
+        /// <summary>
+        /// W3C trace context (traceparent) of the span that produced this message, used to continue the
+        /// distributed trace across the controller/worker WebSocket hop.  Null when no span was active
+        /// or telemetry is not subscribed.  Peers that predate this property ignore it.
+        /// </summary>
+        public string TraceParent { get; set; } = null;
+
+        /// <summary>
+        /// W3C trace state (tracestate) accompanying <see cref="TraceParent"/>.  Null when absent.
+        /// </summary>
+        public string TraceState { get; set; } = null;
+
         private NameValueCollection _Headers = new NameValueCollection(StringComparer.InvariantCultureIgnoreCase);
         private byte[] _Data = Array.Empty<byte>();
         private int? _StatusCode = null;

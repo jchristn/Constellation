@@ -1,0 +1,24 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # Constellation controller: Radiant's in-process Prometheus endpoint, which exports the
+  # Constellation meter, Watson's HTTP meter, and .NET runtime/process metrics.
+  - job_name: 'constellation-controller'
+    metrics_path: '/metrics'
+    # Use the classic text format: Prometheus 3 rejects the OpenTelemetry exporter's OpenMetrics
+    # output because its UNIT metadata does not match the suffixed family names.
+    scrape_protocols: ['PrometheusText0.0.4']
+    static_configs:
+      - targets: ['constellation-controller:9464']
+
+  # Metrics pushed over OTLP by other services (for example worker processes) and re-exposed
+  # by the OpenTelemetry Collector. The controller's own push is filtered out there.
+  - job_name: 'otel-collector'
+    static_configs:
+      - targets: ['otel-collector:8889']
+
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['127.0.0.1:9090']

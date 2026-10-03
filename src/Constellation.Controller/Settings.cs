@@ -64,12 +64,23 @@
             set => _Admin = (value != null ? value : throw new ArgumentNullException(nameof(Admin)));
         }
 
+        /// <summary>
+        /// Telemetry export settings, consumed by the hosting application.  Never null.
+        /// </summary>
+        /// <exception cref="ArgumentNullException">Thrown when set to null.</exception>
+        public TelemetrySettings Telemetry
+        {
+            get => _Telemetry;
+            set => _Telemetry = value ?? throw new ArgumentNullException(nameof(Telemetry));
+        }
+
         private WebserverSettings _Webserver = new WebserverSettings();
         private WebsocketSettings _Websocket = new WebsocketSettings();
         private HeartbeatSettings _Heartbeat = new HeartbeatSettings();
         private ProxySettings _Proxy = new ProxySettings();
         private LoggingSettings _Logging = new LoggingSettings();
         private AdminSettings _Admin = new AdminSettings();
+        private TelemetrySettings _Telemetry = new TelemetrySettings();
 
         /// <summary>
         /// Settings.
