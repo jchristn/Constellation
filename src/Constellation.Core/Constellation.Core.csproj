@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<TargetFrameworks>net8.0;net10.0</TargetFrameworks>
-		<Version>1.1.0</Version>
+		<Version>1.1.1</Version>
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
 		<DocumentationFile>Constellation.Core.xml</DocumentationFile>
 		<ApplicationIcon>logo.ico</ApplicationIcon>
@@ -17,7 +17,7 @@
 		<RepositoryUrl>https://github.com/jchristn/constellation</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<PackageTags>rest workload placement virtualization sqlite</PackageTags>
-		<PackageReleaseNotes>Built-in OpenTelemetry-compatible metrics and traces (Meter and ActivitySource "Constellation"), W3C trace propagation across the controller/worker hop, Watson 7.2. See TELEMETRY.md.</PackageReleaseNotes>
+		<PackageReleaseNotes>Fixed a lock-order deadlock between worker placement and worker removal, and the admin resource map returning lists shared with the live pool. Added REST_API.md and a Postman collection. See CHANGELOG.md.</PackageReleaseNotes>
 		<PackageLicenseFile>LICENSE.md</PackageLicenseFile>
 		<IncludeSymbols>True</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>

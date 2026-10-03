@@ -128,7 +128,7 @@ Instrument names are dotted and use UCUM units. The Prometheus column shows the 
 | `constellation.proxy.stage.events` | Counter | `{event}` | `stage`, `outcome` | `constellation_proxy_stage_events_total` | Per-stage executions. |
 | `constellation.proxy.active_requests` | UpDownCounter | `{request}` | `http.request.method` | `constellation_proxy_active_requests` | Requests in flight. |
 
-`outcome` values: `success`, `no_worker`, `send_failed`, `timeout`, `no_response`, `canceled`, `error`. A request the worker answered with a 4xx/5xx is still `success` at this layer (the controller proxied it); the status code is on Watson's HTTP metrics and on the `worker request` span.
+`outcome` values: `success`, `no_worker`, `send_failed`, `timeout`, `no_response`, `canceled`, `error`. `no_response` is a defensive outcome: the response store raises a timeout rather than returning nothing, so an unanswered request normally records `timeout`. A request the worker answered with a 4xx/5xx is still `success` at this layer (the controller proxied it); the status code is on Watson's HTTP metrics and on the `worker request` span.
 
 `stage` values, in order: `placement` (choose or reuse the owning worker), `dispatch` (serialize and send over WebSocket), `await_response` (the request is queued waiting for the worker; the "queued" state of this pipeline), `respond` (write the worker's answer to the caller).
 

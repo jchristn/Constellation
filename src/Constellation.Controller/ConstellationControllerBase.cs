@@ -206,7 +206,8 @@
                 {
                     ctx.Response.StatusCode = 200;
                     ctx.Response.ContentType = Constants.FaviconContentType;
-                    await ctx.Response.Send(File.ReadAllBytes(Constants.FaviconFilename), _TokenSource.Token).ConfigureAwait(false);
+                    await ctx.Response.Send(_TokenSource.Token).ConfigureAwait(false);
+                    return;
                 }
 
                 if (ctx.Request.Method == HttpMethod.GET
@@ -214,7 +215,11 @@
                 {
                     ctx.Response.StatusCode = 200;
                     ctx.Response.ContentType = Constants.FaviconContentType;
-                    await ctx.Response.Send(_TokenSource.Token).ConfigureAwait(false);
+                    if (File.Exists(Constants.FaviconFilename))
+                        await ctx.Response.Send(File.ReadAllBytes(Constants.FaviconFilename), _TokenSource.Token).ConfigureAwait(false);
+                    else
+                        await ctx.Response.Send(_TokenSource.Token).ConfigureAwait(false);
+                    return;
                 }
 
                 #endregion
@@ -376,8 +381,6 @@
 
                     try
                     {
-                        ctx.Request.Headers.Add(Constants.ForwardedForHeader, (ctx.Request.Source.IpAddress + ":" + ctx.Request.Source.Port));
-
                         msg = new WebsocketMessage
                         {
                             Type = WebsocketMessageTypeEnum.Request,
@@ -387,10 +390,13 @@
                                 Uri = BuildRequestUri(ctx)
                             },
                             Headers = ctx.Request.Headers,
+                            ContentType = ctx.Request.ContentType,
                             Data = ctx.Request.DataAsBytes
                         };
 
-                        msg.Headers.Add(Constants.ForwardedForHeader, ctx.Request.Source.IpAddress);
+                        // Append the client address to any existing chain, as standard proxies do.
+                        string forwardedFor = msg.Headers.Get(Constants.ForwardedForHeader);
+                        msg.Headers.Set(Constants.ForwardedForHeader, String.IsNullOrEmpty(forwardedFor) ? ctx.Request.Source.IpAddress : forwardedFor + ", " + ctx.Request.Source.IpAddress);
 
                         // Continue the trace on the worker: the worker's span becomes a child of the client span.
                         ConstellationTelemetry.Inject(clientSpan, msg);
@@ -517,7 +523,17 @@
                 try
                 {
                     ctx.Response.StatusCode = resp.StatusCode != null ? resp.StatusCode.Value : 200;
-                    ctx.Response.Headers = resp.Headers;
+                    // Merge the worker's headers over the controller's so x-request and x-worker survive.
+                    if (resp.Headers != null)
+                    {
+                        foreach (string key in resp.Headers.AllKeys)
+                        {
+                            if (String.IsNullOrEmpty(key)) continue;
+                            if (key.Equals(Constants.RequestGuidHeader, StringComparison.OrdinalIgnoreCase)) continue;
+                            if (key.Equals(Constants.WorkerNameHeader, StringComparison.OrdinalIgnoreCase)) continue;
+                            ctx.Response.Headers.Set(key, resp.Headers[key]);
+                        }
+                    }
 
                     if (!String.IsNullOrEmpty(resp.ContentType)) ctx.Response.ContentType = resp.ContentType;
 
@@ -792,6 +808,7 @@
                     byte[] data = (e.Data != null ? e.Data.ToArray() : new byte[0]);
                     string json = Encoding.UTF8.GetString(data);
                     WebsocketMessage msg = _Serializer.DeserializeJson<WebsocketMessage>(json);
+                    worker.LastMessageUtc = DateTime.UtcNow;
 
                     if (msg.Type == WebsocketMessageTypeEnum.Heartbeat)
                     {

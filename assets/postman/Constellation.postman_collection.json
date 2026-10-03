@@ -1,0 +1,406 @@
+{
+  "info": {
+    "_postman_id": "6a7f3c1e-2b4d-4e8a-9c5f-1d2e3f4a5b6c",
+    "name": "Constellation",
+    "description": "REST surface of the Constellation controller, as implemented in ConstellationControllerBase.DefaultRoute. Requests are evaluated in order: HEAD/GET / (health), HEAD/GET /favicon.ico (all answered locally), admin API key check (invalid key: 401 on any path), GET /workers and GET /maps with a valid key, then the catch-all proxy to the worker that owns the resource (the raw URL path without query). Every response carries an x-request header (request GUID) and the configured Webserver.Headers.DefaultHeaders; x-worker (worker GUID) is added once a worker is selected and is kept on successful proxied responses, where the worker's headers are merged over the controller's (except x-request and x-worker). Controller errors use ApiErrorResponse: {Error, Message, StatusCode, Description}. Set the collection variables (host, port, apiKey, resourcePath) before running. Default ports: 8000 REST, 8001 worker WebSocket, 9464 Prometheus metrics (separate listener). See REST_API.md and TELEMETRY.md in the repository.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health",
+      "description": "Endpoints answered by the controller itself, without an API key. All four always return 200 and are never proxied or pinned; GET / is what the Docker Compose healthcheck calls.",
+      "item": [
+        {
+          "name": "HEAD / (liveness)",
+          "request": {
+            "method": "HEAD",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                ""
+              ]
+            },
+            "description": "Returns 200 with Content-Type text/html and no body. Adds the x-request response header (a new GUID per request). Never proxied."
+          },
+          "response": []
+        },
+        {
+          "name": "GET / (health page)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                ""
+              ]
+            },
+            "description": "Returns 200 with Content-Type text/html and a static HTML page titled 'Node is Operational'. Adds the x-request response header. Query strings are ignored for matching. Never proxied."
+          },
+          "response": []
+        },
+        {
+          "name": "HEAD /favicon.ico",
+          "request": {
+            "method": "HEAD",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/favicon.ico",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "favicon.ico"
+              ]
+            },
+            "description": "Returns 200 with Content-Type image/png and no body. The file is not read. Adds the x-request response header. Never proxied or pinned."
+          },
+          "response": []
+        },
+        {
+          "name": "GET /favicon.ico",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/favicon.ico",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "favicon.ico"
+              ]
+            },
+            "description": "Returns 200 with Content-Type image/png. The body is the contents of assets/favicon.png (relative to the controller's working directory) when that file exists, otherwise empty; the file is not shipped by default. Adds the x-request response header. Never proxied or pinned."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "description": "Administrative endpoints. They are recognized only when the API key header (Admin.ApiKeyHeader, default x-api-key) is present with a value in Admin.ApiKeys, the method is GET, and the path is exactly /workers or /maps. An invalid key returns 401 AuthorizationFailed on any path. Without the header, or with a valid key and another method, the request is proxied like any other path.",
+      "item": [
+        {
+          "name": "List workers",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "{{apiKeyHeader}}",
+                "value": "{{apiKey}}",
+                "type": "text",
+                "description": "Admin API key. Header name is Admin.ApiKeyHeader (default x-api-key); value must be one of Admin.ApiKeys (default constellationadmin)."
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workers"
+              ]
+            },
+            "description": "Returns 200 application/json: an indented JSON array of WorkerMetadata objects with properties GUID, Ip, Port (the worker's remote WebSocket port), Healthy, AddedUtc, and LastMessageUtc (timestamps formatted yyyy-MM-ddTHH:mm:ss.ffffffZ). LastMessageUtc is updated whenever the controller receives any message from the worker (response or heartbeat reply). Returns [] when no workers are connected. Unhealthy workers are included."
+          },
+          "response": []
+        },
+        {
+          "name": "List resource maps",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "{{apiKeyHeader}}",
+                "value": "{{apiKey}}",
+                "type": "text",
+                "description": "Admin API key. Header name is Admin.ApiKeyHeader (default x-api-key); value must be one of Admin.ApiKeys (default constellationadmin)."
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/maps",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "maps"
+              ]
+            },
+            "description": "Returns 200 application/json: an indented JSON object whose keys are worker GUIDs and whose values are arrays of resource keys (raw URL paths without query) pinned to that worker. Returns {} when nothing is mapped."
+          },
+          "response": []
+        },
+        {
+          "name": "List workers (invalid key, 401)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "{{apiKeyHeader}}",
+                "value": "{{invalidApiKey}}",
+                "type": "text",
+                "description": "Deliberately invalid admin API key."
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/workers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workers"
+              ]
+            },
+            "description": "Demonstrates the invalid key case: 401 with body {\"Error\":\"AuthorizationFailed\",\"Message\":\"Your authentication material was accepted, but you are not authorized to perform this request.\",\"StatusCode\":401}. The same 401 is returned for any path when the key header is present but invalid."
+          },
+          "response": []
+        },
+        {
+          "name": "GET /workers without key (proxied)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/workers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "workers"
+              ]
+            },
+            "description": "Without the API key header this is not an admin request. /workers is treated as a resource and proxied to a worker; with no workers connected the controller answers 502 BadGateway with Description 'No workers available for resource /workers.'"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Proxy",
+      "description": "Every request not handled above is forwarded over WebSocket to the worker that owns the resource. The resource key is the raw URL path without the query string (exact, case-sensitive). The first request for a resource is assigned round-robin to a healthy worker and pinned; later requests go to the same worker while it stays registered and healthy, otherwise the resource is reassigned. The worker receives the method, an absolute URL built from the Host header plus path and query, all request headers, the caller's Content-Type as ContentType, and the body. x-forwarded-for is set to the client IP, or appended as 'existing, ip' when the caller sent one. On success the caller receives the worker's status (default 200), content type (default application/json), and body, with the worker's headers merged over the controller's (worker values win, except x-request and x-worker, which are always the controller's request GUID and worker GUID). Errors: 502 BadGateway (no healthy worker, or send failed), 408 Timeout (no answer within Proxy.TimeoutMs), 500 InternalError (no response or unhandled exception).",
+      "item": [
+        {
+          "name": "GET resource",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/{{resourcePath}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{resourcePath}}"
+              ]
+            },
+            "description": "Forwards a GET to the worker that owns {{resourcePath}}. Repeat it and compare GET /maps to see the pin."
+          },
+          "response": []
+        },
+        {
+          "name": "GET resource with query",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/{{resourcePath}}?limit={{queryLimit}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{resourcePath}}"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "{{queryLimit}}"
+                }
+              ]
+            },
+            "description": "The query string is forwarded to the worker but is not part of the resource key, so this goes to the same worker as 'GET resource'."
+          },
+          "response": []
+        },
+        {
+          "name": "POST resource (JSON body)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/{{resourcePath}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{resourcePath}}"
+              ]
+            },
+            "description": "Forwards a POST with a JSON body. The body bytes are passed to the worker unchanged, and the Content-Type is available both in the forwarded headers and as the message's ContentType property.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"query\": \"SELECT * FROM customers\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PUT resource (JSON body)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/{{resourcePath}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{resourcePath}}"
+              ]
+            },
+            "description": "Same resource key as the other requests in this folder: the method is not part of the key.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"state\": \"running\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE resource",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/{{resourcePath}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{resourcePath}}"
+              ]
+            },
+            "description": "Forwards a DELETE. Pinning is unaffected; the mapping is removed only when the owning worker disconnects or fails over."
+          },
+          "response": []
+        },
+        {
+          "name": "GET resource with traceparent",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "traceparent",
+                "value": "{{traceparent}}",
+                "type": "text",
+                "description": "W3C trace context. The controller's Watson server span becomes a child of this context, and the whole proxy trace (including the worker's span) joins it."
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/{{resourcePath}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{resourcePath}}"
+              ]
+            },
+            "description": "Sends a W3C traceparent header. Watson starts its server span as a child of this context, and the controller's proxy spans and the worker's 'worker handle' span join the same trace. The header itself is also forwarded to the worker. See TELEMETRY.md."
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "protocol",
+      "value": "http",
+      "type": "string",
+      "description": "http, or https when Webserver.Ssl.Enable is true."
+    },
+    {
+      "key": "host",
+      "value": "localhost",
+      "type": "string",
+      "description": "Controller hostname."
+    },
+    {
+      "key": "port",
+      "value": "8000",
+      "type": "string",
+      "description": "Controller REST port (Webserver.Port)."
+    },
+    {
+      "key": "baseUrl",
+      "value": "{{protocol}}://{{host}}:{{port}}",
+      "type": "string",
+      "description": "Composed from protocol, host, and port."
+    },
+    {
+      "key": "apiKeyHeader",
+      "value": "x-api-key",
+      "type": "string",
+      "description": "Admin.ApiKeyHeader."
+    },
+    {
+      "key": "apiKey",
+      "value": "constellationadmin",
+      "type": "string",
+      "description": "An entry in Admin.ApiKeys. The default key ships in the Docker image; change it for any shared deployment."
+    },
+    {
+      "key": "invalidApiKey",
+      "value": "not-a-valid-key",
+      "type": "string",
+      "description": "A value that is not in Admin.ApiKeys, used to demonstrate the 401."
+    },
+    {
+      "key": "resourcePath",
+      "value": "databases/users.db",
+      "type": "string",
+      "description": "Resource path (without leading slash) used by the Proxy folder. The resource key becomes /{{resourcePath}}."
+    },
+    {
+      "key": "queryLimit",
+      "value": "10",
+      "type": "string",
+      "description": "Example query parameter value; queries do not change the resource key."
+    },
+    {
+      "key": "traceparent",
+      "value": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+      "type": "string",
+      "description": "W3C traceparent sent by the traceparent example."
+    }
+  ]
+}

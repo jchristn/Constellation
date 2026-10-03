@@ -55,6 +55,8 @@
                         return "A required property was missing from the request.";
                     case ApiErrorEnum.Timeout:
                         return "The request was not completed within the specified timeout interval.";
+                    case ApiErrorEnum.TokenExpired:
+                        return "Your authentication token has expired.";
                     case ApiErrorEnum.TooLarge:
                         return "The size of your request exceeds the maximum allowed by this server.";
 

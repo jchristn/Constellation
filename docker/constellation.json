@@ -48,6 +48,12 @@
     "Port": 8001,
     "Ssl": false
   },
+  "Admin": {
+    "ApiKeyHeader": "x-api-key",
+    "ApiKeys": [
+      "constellationadmin"
+    ]
+  },
   "Heartbeat": {
     "IntervalMs": 2000,
     "MaxFailures": 5

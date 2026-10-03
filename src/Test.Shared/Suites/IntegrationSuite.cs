@@ -274,6 +274,57 @@ namespace Test.Shared.Suites
                         Check.Contains("No workers available", resp.Body, "no workers body");
                     }
                 }),
+
+                Case("ProxyResponseKeepsControllerHeaders", "A proxied response carries the worker's headers and x-request/x-worker", async ct =>
+                {
+                    using (IntegrationEnvironment env = await IntegrationEnvironment.CreateAsync())
+                    {
+                        await env.AddWorkerAsync(1, 1200);
+                        Check.True(await env.WaitForWorkerCountAsync(1), "worker connected");
+
+                        HttpTestResponse resp = await Get(env, "/api/headers");
+                        Check.Equal(200, resp.StatusCode, "status code");
+                        Check.Equal("worker-1", resp.Header("X-Worker-Id"), "worker header preserved");
+                        Check.NotNull(resp.Header("x-request"), "x-request header present");
+                        Check.NotNull(resp.Header("x-worker"), "x-worker header present");
+                    }
+                }),
+
+                Case("ForwardedRequestMetadata", "The worker receives the request content type and one x-forwarded-for entry", async ct =>
+                {
+                    using (IntegrationEnvironment env = await IntegrationEnvironment.CreateAsync())
+                    {
+                        TestWorkerHarness worker = await env.AddWorkerAsync(1, 1200);
+                        Check.True(await env.WaitForWorkerCountAsync(1), "worker connected");
+
+                        HttpTestResponse resp = await HttpTestClient.SendAsync(HttpMethod.Post, env.BaseUrl + "/api/items", "{\"a\":1}");
+                        Check.Equal(200, resp.StatusCode, "status code");
+                        Check.NotNull(worker.LastRequest, "worker received the request");
+                        Check.Contains("application/json", worker.LastRequest.ContentType, "content type forwarded");
+
+                        string forwardedFor = worker.LastRequest.Headers.Get("x-forwarded-for");
+                        Check.NotNull(forwardedFor, "x-forwarded-for present");
+                        Check.False(forwardedFor.Contains(","), "single x-forwarded-for entry: " + forwardedFor);
+                    }
+                }),
+
+                Case("FaviconNotProxied", "GET and HEAD /favicon.ico are answered by the controller and never pinned", async ct =>
+                {
+                    using (IntegrationEnvironment env = await IntegrationEnvironment.CreateAsync())
+                    {
+                        TestWorkerHarness worker = await env.AddWorkerAsync(1, 1200);
+                        Check.True(await env.WaitForWorkerCountAsync(1), "worker connected");
+
+                        HttpTestResponse get = await Get(env, "/favicon.ico");
+                        Check.Equal(200, get.StatusCode, "GET status code");
+                        HttpTestResponse head = await HttpTestClient.SendAsync(HttpMethod.Head, env.BaseUrl + "/favicon.ico");
+                        Check.Equal(200, head.StatusCode, "HEAD status code");
+
+                        Check.Null(worker.LastRequest, "worker never received the favicon request");
+                        HttpTestResponse maps = await Get(env, "/maps", ApiKey("constellationadmin"));
+                        Check.False(maps.Body.Contains("favicon"), "favicon not pinned");
+                    }
+                }),
             };
 
             return new TestSuiteDescriptor(SuiteId, "Controller/Worker Integration", cases);

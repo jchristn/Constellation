@@ -143,7 +143,7 @@ var settings = new Settings
     Heartbeat = new HeartbeatSettings
     {
         IntervalMs = 2000,      // Check worker health every 2 seconds
-        MaxFailures = 3         // Mark unhealthy after 6 seconds (2000ms * 3)
+        MaxFailures = 3         // Out of rotation after more than 3 consecutive undeliverable heartbeats
     }
 };
 
@@ -441,10 +441,10 @@ dotnet run
 
 The test worker connects to the controller via WebSocket on `localhost:8001`. It logs every incoming request (method, path, content type, and body) to the console and returns a `200 OK` JSON response.
 
-You can also specify a custom hostname, port, or enable SSL:
+You can also pass a custom hostname, port, and SSL flag as positional arguments (`hostname port ssl`):
 
 ```bash
-dotnet run -- --hostname 192.168.1.100 --port 9001 --ssl
+dotnet run -- 192.168.1.100 9001 true
 ```
 
 ### Step 3: Send Requests
@@ -557,7 +557,7 @@ Constellation ships with metrics, traces, and logs built in, so an operator can 
 
 - **Libraries emit, applications host.** `Constellation.Core`, `Constellation.Controller`, and `Constellation.Worker` record into a BCL `Meter` and `ActivitySource` named `Constellation`, with no exporter dependency. With nothing subscribed, recording is effectively free.
 - **Watson 7.2 covers HTTP.** The controller's Watson listener emits the standard `http.server.*` metrics and one server span per request.
-- **Constellation covers everything behind the route:** placement decisions (pinned, assigned, failover, rejected), every proxy stage (`placement`, `dispatch`, `await_response`, `respond`) with outcomes (`success`, `no_worker`, `send_failed`, `timeout`, `no_response`, `error`), worker pool and heartbeat health, the response correlation store, WebSocket messaging, admin API usage, caught errors by type, build info, and configuration.
+- **Constellation covers everything behind the route:** placement decisions (`pinned`, `assigned`, `reassigned` on failover, `no_workers`, `no_healthy_workers`), every proxy stage (`placement`, `dispatch`, `await_response`, `respond`) with outcomes (`success`, `no_worker`, `send_failed`, `timeout`, `no_response`, `error`), worker pool and heartbeat health, the response correlation store, WebSocket messaging, admin API usage, caught errors by type, build info, and configuration.
 - **One trace per request, across processes.** Trace context travels inside the WebSocket message, so the controller's spans and the worker's `worker handle` span (and anything your handler calls) form a single trace.
 - **The controller server exports out of the box** through [Radiant](https://github.com/jchristn/Radiant): a Prometheus scrape endpoint plus OTLP to a collector, Tempo, or Loki. Configure it under `Telemetry` in `constellation.json`.
 
@@ -571,6 +571,18 @@ using RadiantHost host = RadiantHost.Start(settings);
 ```
 
 See [TELEMETRY.md](TELEMETRY.md) for the full metric and span catalog, configuration keys, the dashboard map, and recommended alerts.
+
+## REST API
+
+The controller answers `GET`/`HEAD /` (health) and `/favicon.ico` itself, serves two admin endpoints, and proxies everything else to the worker that owns the resource:
+
+- `GET /workers`: the worker pool, with health and timestamps. Requires the admin API key header.
+- `GET /maps`: worker GUID to pinned resources. Requires the admin API key header.
+- Proxied responses carry `x-request` (request GUID) and `x-worker` (owning worker GUID) alongside the worker's own headers.
+
+The admin header defaults to `x-api-key` and the key to `constellationadmin` (`Settings.Admin`, and the `Admin` block in `docker/constellation.json`). Change the key before exposing the controller. A request that sends the header with a wrong key is rejected with `401` on any path.
+
+See [REST_API.md](REST_API.md) for every endpoint, status code, and error body, and import [assets/postman/Constellation.postman_collection.json](assets/postman/Constellation.postman_collection.json) into Postman to try them.
 
 ## Configuration
 
@@ -593,7 +605,7 @@ var settings = new Settings
     Heartbeat = new HeartbeatSettings
     {
         IntervalMs = 2000,        // How often to ping workers
-        MaxFailures = 3           // Worker marked unhealthy after 6 seconds (2000ms * 3)
+        MaxFailures = 3           // Out of rotation after more than 3 consecutive undeliverable heartbeats (default 5)
     },
     Proxy = new ProxySettings
     {
@@ -613,10 +625,13 @@ The `Telemetry` section is read by the controller server (`Constellation.Control
 
 ### Health Check
 
-Workers are considered unhealthy when they fail to respond to heartbeats for:
-**IntervalMs × MaxFailures** milliseconds
+The controller sends each connected worker a heartbeat every `IntervalMs` (default 2000). A worker is marked unhealthy, and its heartbeat loop stops, when **more than `MaxFailures` consecutive heartbeats** (default 5) cannot be delivered, which takes roughly `IntervalMs × (MaxFailures + 1)`.
 
-Example: With IntervalMs=2000 and MaxFailures=3, a worker is marked unhealthy after 6 seconds of no response.
+- An unhealthy worker receives no new placements. Resources pinned to it move to a healthy worker on their next request.
+- A worker that disconnects is removed from the pool immediately, along with its resource mappings.
+- A worker that reconnects joins the pool as a new worker.
+
+Example: with IntervalMs=2000 and MaxFailures=3, a worker whose connection stops accepting heartbeats is taken out of rotation after about 8 seconds.
 
 ## Best Practices
 
@@ -665,7 +680,7 @@ Controller looks up which Worker owns the resource (URL path)
                 ↓
 Controller forwards request via WebSocket to Worker
                 ↓
-Worker (Port 8001) processes request with exclusive resource access
+Worker (connected to the controller's WebSocket port 8001) processes request with exclusive resource access
                 ↓
 Worker sends response to Controller
                 ↓

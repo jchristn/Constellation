@@ -71,6 +71,7 @@ namespace Test.Shared.Suites
                     {
                         ApiErrorResponse resp = new ApiErrorResponse(error);
                         Check.False(string.IsNullOrEmpty(resp.Message), "message present for " + error);
+                        Check.False(resp.Message.Contains("unknown error code"), "specific message for " + error);
                     }
                     return Task.CompletedTask;
                 }),

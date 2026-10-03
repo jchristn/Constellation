@@ -2,7 +2,26 @@
 
 ## Current Version
 
-v1.1.0
+v1.1.1
+
+### Fixes
+
+- Fixed a deadlock between worker placement and worker removal: `WorkerService.RemoveWorker` took the worker and resource-map locks in the opposite order from placement
+- `WorkerService.ResourceMap` now returns copies of each resource list, so callers (such as `GET /maps`) can no longer enumerate a list that placement is mutating
+- Successful proxied responses now keep the controller's `x-request` and `x-worker` headers; the worker's headers are merged in rather than replacing the collection
+- `GET /favicon.ico` is answered by the controller and no longer also proxied and pinned as a resource; `HEAD /favicon.ico` no longer fails with 500 when `assets/favicon.png` is absent
+- The forwarded request now carries the caller's content type in `WebsocketMessage.ContentType`
+- `x-forwarded-for` is added once (client IP, appended to any existing chain) instead of twice
+- `WorkerMetadata.LastMessageUtc` is now updated whenever the controller receives a message from the worker
+- `ApiErrorEnum.TokenExpired` now has a specific message
+
+### Documentation
+
+- Added `REST_API.md` and a Postman collection (`assets/postman/Constellation.postman_collection.json`)
+- Corrected the README health-check semantics, test worker arguments, data-flow ports, and placement decision names, and added a REST API section
+- `docker/constellation.json` now includes an explicit `Admin` block
+
+## v1.1.0
 
 ### Observability
 

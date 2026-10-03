@@ -38,7 +38,8 @@
             {
                 lock (_ResourceMapLock)
                 {
-                    return new Dictionary<Guid, List<string>>(_ResourceMap);
+                    // Copy each list so callers never enumerate a list that placement is mutating.
+                    return _ResourceMap.ToDictionary(kvp => kvp.Key, kvp => new List<string>(kvp.Value));
                 }
             }
         }
@@ -287,24 +288,25 @@
         /// <returns>True if removed.</returns>
         public bool RemoveWorker(Guid guid)
         {
-            lock (_WorkersLock)
+            // Lock order must match SelectWorker (resource map, then workers) to avoid deadlock.
+            lock (_ResourceMapLock)
             {
-                // Keep the most recent heartbeat success of departing workers so the last-success gauge survives removal.
-                foreach (WorkerMetadata departing in _Workers.Where(w => w.GUID == guid))
+                lock (_WorkersLock)
                 {
-                    if (departing.LastHeartbeatSuccessUtc > _RetiredLastHeartbeatSuccessUtc)
-                        _RetiredLastHeartbeatSuccessUtc = departing.LastHeartbeatSuccessUtc;
-                }
-
-                bool removed = _Workers.RemoveAll(w => w.GUID == guid) > 0;
-
-                if (removed)
-                {
-                    _Logging.Info(_Header + $"removed worker {guid} from pool (remaining: {_Workers.Count})");
-
-                    // Clean up any resource mappings for this worker
-                    lock (_ResourceMapLock)
+                    // Keep the most recent heartbeat success of departing workers so the last-success gauge survives removal.
+                    foreach (WorkerMetadata departing in _Workers.Where(w => w.GUID == guid))
                     {
+                        if (departing.LastHeartbeatSuccessUtc > _RetiredLastHeartbeatSuccessUtc)
+                            _RetiredLastHeartbeatSuccessUtc = departing.LastHeartbeatSuccessUtc;
+                    }
+
+                    bool removed = _Workers.RemoveAll(w => w.GUID == guid) > 0;
+
+                    if (removed)
+                    {
+                        _Logging.Info(_Header + $"removed worker {guid} from pool (remaining: {_Workers.Count})");
+
+                        // Clean up any resource mappings for this worker
                         if (_ResourceMap.ContainsKey(guid))
                         {
                             int resourceCount = _ResourceMap[guid].Count;
@@ -312,9 +314,9 @@
                             _Logging.Debug(_Header + $"removed {resourceCount} resource mapping(s) for worker {guid} due to worker removal");
                         }
                     }
-                }
 
-                return removed;
+                    return removed;
+                }
             }
         }
 

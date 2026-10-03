@@ -49,7 +49,7 @@ curl -H "x-api-key: constellationadmin" http://localhost:8000/maps      # resour
 curl http://localhost:8000/databases/users.db                           # routed to the owning worker
 ```
 
-Change the default admin API key (`Admin.ApiKeys` in `constellation.json`) before exposing the controller.
+Change the default admin API key (`Admin.ApiKeys` in `constellation.json`) before exposing the controller. The full API is documented in [REST_API.md](https://github.com/jchristn/constellation/blob/main/REST_API.md), with a Postman collection in [assets/postman](https://github.com/jchristn/constellation/tree/main/assets/postman).
 
 ## Full stack with dashboard and observability
 

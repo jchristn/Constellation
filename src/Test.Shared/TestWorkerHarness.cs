@@ -64,10 +64,16 @@ namespace Test.Shared
         /// </summary>
         public bool ThrowOnRequest { get; set; } = false;
 
+        /// <summary>
+        /// The most recent non-heartbeat request this worker received, or null.
+        /// </summary>
+        public WebsocketMessage LastRequest { get; private set; } = null;
+
         /// <inheritdoc />
         public override async Task<WebsocketMessage> OnRequestReceived(WebsocketMessage req)
         {
             if (req.Type.Equals(WebsocketMessageTypeEnum.Heartbeat)) return null;
+            LastRequest = req;
             if (ResponseDelayMs > 0) await Task.Delay(ResponseDelayMs).ConfigureAwait(false);
             if (ThrowOnRequest) throw new InvalidOperationException("Simulated worker handler failure.");
 

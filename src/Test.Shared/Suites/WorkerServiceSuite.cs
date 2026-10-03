@@ -165,6 +165,56 @@ namespace Test.Shared.Suites
                     Check.False(stillMapped, "resource mapping cleared");
                     return Task.CompletedTask;
                 }),
+
+                Case("ResourceMapIsSnapshot", "ResourceMap returns copies that later placement does not mutate", ct =>
+                {
+                    WorkerService svc = NewService();
+                    WorkerMetadata a = NewWorker();
+                    svc.AddWorker(a);
+                    svc.GetByResource("/api/one");
+
+                    Dictionary<Guid, List<string>> snapshot = svc.ResourceMap;
+                    svc.GetByResource("/api/two");
+
+                    Check.Equal(1, snapshot[a.GUID].Count, "snapshot list unchanged by later placement");
+                    Check.Equal(2, svc.ResourceMap[a.GUID].Count, "live map has both resources");
+                    return Task.CompletedTask;
+                }),
+
+                Case("ConcurrentPlacementAndRemovalNoDeadlock", "Placement and worker removal running concurrently never deadlock", async ct =>
+                {
+                    WorkerService svc = NewService();
+                    using CancellationTokenSource stop = new CancellationTokenSource();
+
+                    Task placer = Task.Run(() =>
+                    {
+                        int i = 0;
+                        while (!stop.IsCancellationRequested)
+                        {
+                            WorkerMetadata w = svc.GetByResource("/api/r" + (i++ % 16));
+                            if (w != null) w.Healthy = (i % 3) != 0;
+                        }
+                    });
+
+                    Task churner = Task.Run(() =>
+                    {
+                        while (!stop.IsCancellationRequested)
+                        {
+                            WorkerMetadata w = NewWorker();
+                            svc.AddWorker(w);
+                            svc.GetByResource("/api/churn");
+                            svc.RemoveWorker(w.GUID);
+                        }
+                    });
+
+                    await Task.Delay(1000, ct);
+                    stop.Cancel();
+
+                    Task all = Task.WhenAll(placer, churner);
+                    Task finished = await Task.WhenAny(all, Task.Delay(5000, ct));
+                    Check.True(finished == all, "placement and removal threads finished (no deadlock)");
+                    await all;
+                }),
             };
 
             return new TestSuiteDescriptor(SuiteId, "Worker Service (Routing)", cases);
