@@ -27,6 +27,7 @@ namespace Test.Shared
                     WorkerServiceSuite.Build(),
                     IntegrationSuite.Build(),
                     TelemetrySuite.Build(),
+                    StructuredLoggingSuite.Build(),
                 };
             }
         }

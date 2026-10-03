@@ -464,6 +464,19 @@ curl -X POST http://localhost:8000/my/resource \
 
 You should see each request logged in the test worker's console output. You can run multiple instances of `Test.ConstellationWorker` to see round-robin resource distribution in action.
 
+### Running the Automated Tests
+
+Every test suite lives in `src/Test.Shared` (built on [Touchstone](https://github.com/jchristn/touchstone)) and runs unchanged under three runners:
+
+```bash
+cd src
+dotnet run --project Test.Automated   # Touchstone CLI runner (exit code 0 = all passed)
+dotnet test Test.Xunit                # xUnit adapter
+dotnet test Test.Nunit                # NUnit adapter
+```
+
+The suites cover core models, API errors, serialization, settings, the worker base class, placement, end-to-end proxying, telemetry, and structured logging.
+
 ## Dashboard
 
 Constellation includes a web-based dashboard for monitoring and managing your controller, workers, and resource assignments. The dashboard is a React application built with Vite.
@@ -701,6 +714,7 @@ Built with:
 - [WatsonWebserver](https://github.com/jchristn/watsonwebserver) - Web server
 - [WatsonWebsocket](https://github.com/jchristn/watsonwebsocket) - WebSocket implementation
 - [SyslogLogging](https://github.com/jchristn/sysloglogging) - Logging
+- [Touchstone](https://github.com/jchristn/touchstone) - Test suites and runners
 
 ---
 

@@ -2,7 +2,22 @@
 
 ## Current Version
 
-v1.1.1
+v1.1.2
+
+### Dependencies
+
+- `SyslogLogging` 2.0.13 -> 2.3.1 (Core, Controller, Worker)
+- `Watson` 7.2.1 -> 7.2.2 (Controller)
+- `Microsoft.Extensions.Logging.Abstractions` 8.0.3 -> 10.0.12 (Controller)
+- `Timestamps` 1.0.11 -> 1.0.13 (Core)
+- Test projects: `Touchstone.*` 0.1.12 -> 0.2.0, `Microsoft.NET.Test.Sdk` 17.12.0 -> 18.10.1, `xunit.runner.visualstudio` 3.0.0 -> 4.0.0, `NUnit` 4.3.2 -> 5.0.0, `NUnit3TestAdapter` 4.6.0 -> 6.3.0, `Microsoft.Data.Sqlite` 10.0.4 -> 10.0.12
+
+### Tests
+
+- Added a Structured Logging suite (4 cases) covering `ConstellationControllerBase.Logger` against the updated logging abstractions: the no-op default and null handling, worker connect/disconnect records with named template values, the no-worker warning, and containment of a throwing logger
+- Added `Test.Shared/CapturingLogger.cs`, an in-memory `ILogger` for assertions on structured log records
+
+## v1.1.1
 
 ### Fixes
 

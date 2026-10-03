@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<TargetFrameworks>net8.0;net10.0</TargetFrameworks>
-		<Version>1.1.1</Version>
+		<Version>1.1.2</Version>
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
 		<DocumentationFile>Constellation.Worker.xml</DocumentationFile>
 		<ApplicationIcon>logo.ico</ApplicationIcon>
@@ -43,7 +43,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="SyslogLogging" Version="2.0.13" />
+		<PackageReference Include="SyslogLogging" Version="2.3.1" />
 		<PackageReference Include="WatsonWebsocket" Version="4.1.8" />
 	</ItemGroup>
 

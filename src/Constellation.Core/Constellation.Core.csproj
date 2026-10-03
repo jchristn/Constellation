@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<TargetFrameworks>net8.0;net10.0</TargetFrameworks>
-		<Version>1.1.1</Version>
+		<Version>1.1.2</Version>
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
 		<DocumentationFile>Constellation.Core.xml</DocumentationFile>
 		<ApplicationIcon>logo.ico</ApplicationIcon>
@@ -44,8 +44,8 @@
 
 	<ItemGroup>
 		<PackageReference Include="ExpressionTree" Version="1.1.2" />
-		<PackageReference Include="SyslogLogging" Version="2.0.13" />
-		<PackageReference Include="Timestamps" Version="1.0.11" />
+		<PackageReference Include="SyslogLogging" Version="2.3.1" />
+		<PackageReference Include="Timestamps" Version="1.0.13" />
 	</ItemGroup>
 
 	<ItemGroup>
